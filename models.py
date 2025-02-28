@@ -5,10 +5,20 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import app_templates
 
 # Initialize Gemini
-try:
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-except Exception as e:
-    print(f"Error initializing Gemini: {str(e)}")
+def initialize_gemini():
+    """Initialize the Gemini API with the API key from environment variables"""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        try:
+            genai.configure(api_key=api_key)
+            return True
+        except Exception as e:
+            print(f"Error initializing Gemini: {str(e)}")
+            return False
+    return False
+
+# Initial check
+gemini_initialized = initialize_gemini()
 
 # Model loading functions with caching to avoid reloading
 _codet5_model = None
@@ -42,6 +52,15 @@ def get_t0_model():
 
 def generate_with_gemini(prompt, app_type, template_name):
     """Generate code using Gemini Pro model"""
+    # Initialize Gemini if not already initialized
+    if not initialize_gemini():
+        return fallback_generation(
+            app_type, 
+            template_name, 
+            prompt, 
+            "Gemini API key not set or invalid. Please add your API key in the sidebar."
+        )
+    
     try:
         # Get template for context
         template = ""
@@ -89,6 +108,7 @@ def generate_with_gemini(prompt, app_type, template_name):
         
         # Extract and clean the code
         generated_code = response.text
+        
         # Clean up any markdown code blocks if present
         if "```python" in generated_code:
             code_blocks = re.findall(r"```python\n(.*?)```", generated_code, re.DOTALL)
@@ -99,20 +119,7 @@ def generate_with_gemini(prompt, app_type, template_name):
     
     except Exception as e:
         print(f"Error in Gemini generation: {str(e)}")
-        # Return a fallback template with error info
-        if app_type == "streamlit":
-            template = app_templates.get_streamlit_template(template_name)
-        else:
-            template = app_templates.get_gradio_template(template_name)
-            
-        return f"""# Error generating code with Gemini: {str(e)}
-# Using template as fallback
-
-{template}
-
-# TODO: Implement the following functionality based on the prompt:
-# {prompt}
-"""
+        return fallback_generation(app_type, template_name, prompt, str(e))
 
 def generate_with_codet5(prompt, app_type, template_name):
     """Generate code using CodeT5-small model"""

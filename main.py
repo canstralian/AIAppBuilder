@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
 from utils import format_code, validate_code, export_code, get_app_type_info, get_model_info
@@ -15,6 +16,10 @@ st.set_page_config(
 # Custom CSS
 with open('assets/custom.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    
+# Check for API key
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+has_gemini_api_key = GOOGLE_API_KEY is not None
 
 # Application state
 if 'generated_code' not in st.session_state:
@@ -35,6 +40,18 @@ st.markdown("Generate AI-powered Streamlit and Gradio applications using multipl
 # Sidebar
 with st.sidebar:
     st.header("Configuration")
+    
+    # API Key input (if needed)
+    if not has_gemini_api_key:
+        st.warning("⚠️ Gemini API Key not found")
+        api_key = st.text_input("Enter your Google Gemini API Key:", type="password", help="Get a key at https://makersuite.google.com/")
+        if api_key:
+            os.environ["GOOGLE_API_KEY"] = api_key
+            st.success("API Key set! Please refresh to apply.")
+            if st.button("Refresh App"):
+                st.experimental_rerun()
+    else:
+        st.success("✅ Gemini API Key detected")
     
     # App type selection
     app_type = st.radio(
@@ -60,12 +77,17 @@ with st.sidebar:
     )
     
     # Model selection
+    available_models = ["Gemini Pro 2.0", "CodeT5", "T0_3B"]
+    if not has_gemini_api_key:
+        # If no API key, show warning next to Gemini option
+        available_models[0] = "Gemini Pro 2.0 ⚠️"
+        
     model_name = st.radio(
         "AI Model",
-        ["Gemini Pro 2.0", "CodeT5", "T0_3B"],
+        available_models,
         key="model_name_radio",
-        index=0,
-        on_change=lambda: setattr(st.session_state, 'model_name', st.session_state.model_name_radio.lower().replace(" ", "_").replace(".", ""))
+        index=1 if not has_gemini_api_key else 0,  # Default to CodeT5 if no API key
+        on_change=lambda: setattr(st.session_state, 'model_name', st.session_state.model_name_radio.split(" ")[0].lower().replace(".", "") + (st.session_state.model_name_radio.split(" ")[1].lower() if len(st.session_state.model_name_radio.split(" ")) > 1 and st.session_state.model_name_radio.split(" ")[0].lower() == "gemini" else ""))
     )
     
     # Advanced options
