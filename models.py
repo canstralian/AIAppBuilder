@@ -7,8 +7,30 @@ This module handles loading models, generating code, and providing fallbacks.
 import os
 import re
 import google.generativeai as genai
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import app_templates
+
+# Wrap transformer imports in try-except to handle PyTorch errors
+try:
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+except RuntimeError as e:
+    if "Tried to instantiate class" in str(e):
+        print("Warning: PyTorch custom class issue detected. Using fallback mode.")
+        # Create dummy classes to prevent errors
+        class DummyAutoModel:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                return None
+        
+        class DummyAutoTokenizer:
+            @classmethod
+            def from_pretrained(cls, *args, **kwargs):
+                return None
+                
+        AutoModelForSeq2SeqLM = DummyAutoModel
+        AutoTokenizer = DummyAutoTokenizer
+    else:
+        # Re-raise if it's a different error
+        raise
 
 
 # Initialize Gemini
