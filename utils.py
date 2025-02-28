@@ -1,10 +1,16 @@
 import streamlit as st
 import ast
-import io
 import base64
 
 def format_code(code):
-    """Format the generated code"""
+    """Format the generated code.
+
+    Args:
+        code (str): The code to format.
+
+    Returns:
+        str: The formatted code.
+    """
     try:
         # Parse the code to validate syntax
         ast.parse(code)
@@ -18,7 +24,14 @@ def format_code(code):
         return f"# Note: The generated code has a syntax error that may need fixing:\n# {str(e)}\n\n{code}"
 
 def validate_code(code):
-    """Validate if the code has proper syntax"""
+    """Validate if the code has proper syntax.
+
+    Args:
+        code (str): The code to validate.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating whether the code is valid and an error message (if any).
+    """
     try:
         ast.parse(code)
         return True, "Code syntax is valid."
@@ -30,13 +43,28 @@ def validate_code(code):
         return False, f"Error validating code: {str(e)}"
 
 def export_code(code, filename="app.py"):
-    """Create a download link for the code file"""
+    """Create a download link for the code file.
+
+    Args:
+        code (str): The code to export.
+        filename (str, optional): The name of the file. Defaults to "app.py".
+
+    Returns:
+        str: HTML code for a download link.
+    """
     b64 = base64.b64encode(code.encode()).decode()
     href = f'<a href="data:file/text;base64,{b64}" download="{filename}" class="download-btn">💾 Download {filename}</a>'
     return href
 
 def get_app_type_info(app_type):
-    """Return information about app types"""
+    """Return information about app types.
+
+    Args:
+        app_type (str): The type of app.
+
+    Returns:
+        str: Information about the app type.
+    """
     info = {
         "streamlit": """
 ### Streamlit
@@ -75,11 +103,18 @@ def get_app_type_info(app_type):
 - Interactive machine learning demos
         """
     }
-    
+
     return info.get(app_type, "No information available for this app type.")
 
 def get_model_info(model_name):
-    """Return information about AI models"""
+    """Return information about AI models.
+
+    Args:
+        model_name (str): The name of the model.
+
+    Returns:
+        str: Information about the model.
+    """
     info = {
         "gemini_pro_20": """
 ### Gemini Pro 2.0
@@ -136,5 +171,5 @@ def get_model_info(model_name):
 - Medium-sized model (3B parameters)
         """
     }
-    
+
     return info.get(model_name, "No information available for this model.")

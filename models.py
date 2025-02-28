@@ -2,6 +2,7 @@
 """
 AI model integration module for code generation.
 Provides interfaces to multiple AI models including Gemini, CodeT5, and T0.
+This module handles loading models, generating code, and providing fallbacks.
 """
 import os
 import re
@@ -12,7 +13,11 @@ import app_templates
 
 # Initialize Gemini
 def initialize_gemini():
-    """Initialize the Gemini API with the API key from environment variables"""
+    """Initialize the Gemini API with the API key from environment variables.
+    
+    Returns:
+        bool: True if initialization was successful, False otherwise
+    """
     api_key = os.getenv("GOOGLE_API_KEY")
     if api_key:
         try:
@@ -35,7 +40,11 @@ _T0_TOKENIZER = None
 
 
 def get_codet5_model():
-    """Load CodeT5 model and tokenizer"""
+    """Load CodeT5 model and tokenizer.
+    
+    Returns:
+        tuple: (model, tokenizer) or (None, None) if loading fails
+    """
     global _CODET5_MODEL, _CODET5_TOKENIZER
     if _CODET5_MODEL is None:
         try:
@@ -59,7 +68,11 @@ def get_codet5_model():
 
 
 def get_t0_model():
-    """Load T0_3B model and tokenizer"""
+    """Load T0_3B model and tokenizer.
+    
+    Returns:
+        tuple: (model, tokenizer) or (None, None) if loading fails
+    """
     global _T0_MODEL, _T0_TOKENIZER
     if _T0_MODEL is None:
         try:
@@ -81,7 +94,16 @@ def get_t0_model():
 
 
 def generate_with_gemini(prompt, app_type, template_name):
-    """Generate code using Gemini Pro model"""
+    """Generate code using Gemini Pro model.
+    
+    Args:
+        prompt (str): User's description of the desired application
+        app_type (str): Type of application ('streamlit' or 'gradio')
+        template_name (str): Name of the template to use as reference
+        
+    Returns:
+        str: Generated code or fallback if generation fails
+    """
     # Initialize Gemini if not already initialized
     if not initialize_gemini():
         return fallback_generation(
@@ -158,7 +180,16 @@ def generate_with_gemini(prompt, app_type, template_name):
 
 
 def generate_with_codet5(prompt, app_type, template_name):
-    """Generate code using CodeT5-small model"""
+    """Generate code using CodeT5-small model.
+    
+    Args:
+        prompt (str): User's description of the desired application
+        app_type (str): Type of application ('streamlit' or 'gradio')
+        template_name (str): Name of the template to use as reference
+        
+    Returns:
+        str: Generated code or fallback if generation fails
+    """
     try:
         model, tokenizer = get_codet5_model()
         if model is None or tokenizer is None:
@@ -212,7 +243,16 @@ def generate_with_codet5(prompt, app_type, template_name):
 
 
 def generate_with_t0(prompt, app_type, template_name):
-    """Generate code using T0_3B model"""
+    """Generate code using T0_3B model.
+    
+    Args:
+        prompt (str): User's description of the desired application
+        app_type (str): Type of application ('streamlit' or 'gradio')
+        template_name (str): Name of the template to use as reference
+        
+    Returns:
+        str: Generated code or fallback if generation fails
+    """
     try:
         model, tokenizer = get_t0_model()
         if model is None or tokenizer is None:
@@ -242,7 +282,17 @@ def generate_with_t0(prompt, app_type, template_name):
 
 
 def fallback_generation(app_type, template_name, prompt, error_message):
-    """Generate fallback code when model generation fails"""
+    """Generate fallback code when model generation fails.
+    
+    Args:
+        app_type (str): Type of application ('streamlit' or 'gradio')
+        template_name (str): Name of the template to use
+        prompt (str): Original user prompt
+        error_message (str): Error message to include in the comment
+        
+    Returns:
+        str: Fallback code based on the template
+    """
     if app_type == "streamlit":
         template = app_templates.get_streamlit_template(template_name)
     else:
@@ -259,7 +309,15 @@ def fallback_generation(app_type, template_name, prompt, error_message):
 
 
 def adapt_template(template, prompt):
-    """Adapts a template based on the user's prompt"""
+    """Adapts a template based on the user's prompt.
+    
+    Args:
+        template (str): Template code to adapt
+        prompt (str): User's prompt to extract information from
+        
+    Returns:
+        str: Adapted template code
+    """
     # Basic adaptation - change comments and app title
     adapted_code = template
 
@@ -289,7 +347,14 @@ def adapt_template(template, prompt):
 
 
 def extract_keywords(prompt):
-    """Extract potential keywords from the prompt"""
+    """Extract potential keywords from the prompt.
+    
+    Args:
+        prompt (str): User's prompt
+        
+    Returns:
+        list: List of extracted keywords
+    """
     common_words = {
         "a",
         "the",
@@ -311,7 +376,14 @@ def extract_keywords(prompt):
 
 
 def generate_title_from_prompt(prompt):
-    """Generate a title from the user's prompt"""
+    """Generate a title from the user's prompt.
+    
+    Args:
+        prompt (str): User's prompt
+        
+    Returns:
+        str: Generated title
+    """
     # Extract first sentence or use whole prompt if short
     first_sentence = prompt.split(".")[0]
     if len(first_sentence) > 50:
