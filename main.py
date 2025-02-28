@@ -63,18 +63,48 @@ with st.sidebar:
     )
     
     # Template selection
-    if app_type == "Streamlit":
-        template_options = ["blank", "data_viz", "file_upload", "form", "nlp", "image_classifier"]
-    else:  # Gradio
-        template_options = ["blank", "image_classifier", "text_gen", "audio", "chat"]
+    template_display_names = {
+        "streamlit": {
+            "blank": "Blank Template",
+            "data_viz": "Data Visualization",
+            "file_upload": "File Upload & Processing",
+            "form": "Interactive Form",
+            "nlp": "NLP Analysis App",
+            "image_classifier": "Image Classification"
+        },
+        "gradio": {
+            "blank": "Blank Template",
+            "image_classifier": "Image Classification",
+            "text_gen": "Text Generation",
+            "audio": "Audio Analysis",
+            "chat": "Chat Interface"
+        }
+    }
     
-    template_name = st.selectbox(
+    if app_type == "Streamlit":
+        template_keys = ["blank", "data_viz", "file_upload", "form", "nlp", "image_classifier"]
+        template_options = [template_display_names["streamlit"][key] for key in template_keys]
+    else:  # Gradio
+        template_keys = ["blank", "image_classifier", "text_gen", "audio", "chat"]
+        template_options = [template_display_names["gradio"][key] for key in template_keys]
+        
+    selected_display_name = st.selectbox(
         "Starting Template",
         template_options,
-        key="template_name_select",
-        index=0,
-        on_change=lambda: setattr(st.session_state, 'template_name', st.session_state.template_name_select)
+        key="template_display_select",
+        index=0
     )
+    
+    # Find the corresponding template key
+    if app_type == "Streamlit":
+        selected_key = [k for k, v in template_display_names["streamlit"].items() 
+                        if v == selected_display_name][0]
+    else:
+        selected_key = [k for k, v in template_display_names["gradio"].items() 
+                        if v == selected_display_name][0]
+    
+    # Update session state
+    st.session_state.template_name = selected_key
     
     # Model selection
     available_models = ["Gemini Pro 2.0", "CodeT5", "T0_3B"]
@@ -108,9 +138,9 @@ with st.sidebar:
     # App templates preview
     with st.expander("Template Preview"):
         if app_type.lower() == "streamlit":
-            st.code(get_streamlit_template(template_name)[:500] + "...", language="python")
+            st.code(get_streamlit_template(st.session_state.template_name)[:500] + "...", language="python")
         else:
-            st.code(get_gradio_template(template_name)[:500] + "...", language="python")
+            st.code(get_gradio_template(st.session_state.template_name)[:500] + "...", language="python")
 
 # Main content
 col1, col2 = st.columns([1, 1])

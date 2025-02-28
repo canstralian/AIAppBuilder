@@ -5,6 +5,20 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "google-generativeai>=0.8.4",
+    "matplotlib>=3.10.1",
+    "nltk>=3.9.1",
+    "pandas>=2.2.3",
+    "seaborn>=0.13.2",
     "streamlit>=1.42.2",
+    "torch>=2.6.0",
     "transformers>=4.49.0",
 ]
+
+[[tool.uv.index]]
+explicit = true
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
+torchvision = [{ index = "pytorch-cpu", marker = "platform_system == 'Linux'" }]
