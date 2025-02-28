@@ -2,7 +2,13 @@ import streamlit as st
 import os
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
-from utils import format_code, validate_code, export_code, get_app_type_info, get_model_info
+from utils import (
+    format_code,
+    validate_code,
+    export_code,
+    get_app_type_info,
+    get_model_info,
+)
 import random
 
 # Set page configuration
@@ -10,42 +16,44 @@ st.set_page_config(
     page_title="AI App Generator",
     page_icon="🧙‍♂️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Initialize theme in session state if not present
-if 'theme' not in st.session_state:
+if "theme" not in st.session_state:
     # Default to light theme
     st.session_state.theme = "light"
 
 # Custom CSS
-with open('assets/custom.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+with open("assets/custom.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # Check for API key
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 has_gemini_api_key = GOOGLE_API_KEY is not None
 
 # Application state
-if 'generated_code' not in st.session_state:
+if "generated_code" not in st.session_state:
     st.session_state.generated_code = ""
-if 'app_type' not in st.session_state:
+if "app_type" not in st.session_state:
     st.session_state.app_type = "streamlit"
-if 'template_name' not in st.session_state:
+if "template_name" not in st.session_state:
     st.session_state.template_name = "blank"
-if 'model_name' not in st.session_state:
+if "model_name" not in st.session_state:
     st.session_state.model_name = "gemini"
-if 'prompt_history' not in st.session_state:
+if "prompt_history" not in st.session_state:
     st.session_state.prompt_history = []
 
 # Header
 st.title("🧙‍♂️ AI Application Generator")
-st.markdown("Generate AI-powered Streamlit and Gradio applications using multiple AI models")
+st.markdown(
+    "Generate AI-powered Streamlit and Gradio applications using multiple AI models"
+)
 
 # Sidebar
 with st.sidebar:
     st.header("Configuration")
-    
+
     # Theme toggle
     def toggle_theme():
         if st.session_state.theme == "light":
@@ -53,14 +61,15 @@ with st.sidebar:
         else:
             st.session_state.theme = "light"
         st.rerun()
-        
+
     theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
     theme_text = f"{theme_icon} Switch to {'Dark' if st.session_state.theme == 'light' else 'Light'} Mode"
     st.button(theme_text, on_click=toggle_theme)
-    
+
     # Apply theme-specific styles through HTML
     if st.session_state.theme == "dark":
-        st.markdown("""
+        st.markdown(
+            """
         <style>
         :root {
             --primary-color: #BB86FC;
@@ -115,12 +124,18 @@ with st.sidebar:
             color: var(--secondary-color);
         }
         </style>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # API Key input (if needed)
     if not has_gemini_api_key:
         st.warning("⚠️ Gemini API Key not found")
-        api_key = st.text_input("Enter your Google Gemini API Key:", type="password", help="Get a key at https://makersuite.google.com/")
+        api_key = st.text_input(
+            "Enter your Google Gemini API Key:",
+            type="password",
+            help="Get a key at https://makersuite.google.com/",
+        )
         if api_key:
             os.environ["GOOGLE_API_KEY"] = api_key
             st.success("API Key set! Please refresh to apply.")
@@ -135,7 +150,9 @@ with st.sidebar:
         ["Streamlit", "Gradio"],
         key="app_type_radio",
         index=0,
-        on_change=lambda: setattr(st.session_state, 'app_type', st.session_state.app_type_radio.lower())
+        on_change=lambda: setattr(
+            st.session_state, "app_type", st.session_state.app_type_radio.lower()
+        ),
     )
 
     # Template selection
@@ -146,38 +163,52 @@ with st.sidebar:
             "file_upload": "File Upload & Processing",
             "form": "Interactive Form",
             "nlp": "NLP Analysis App",
-            "image_classifier": "Image Classification"
+            "image_classifier": "Image Classification",
         },
         "gradio": {
             "blank": "Blank Template",
             "image_classifier": "Image Classification",
             "text_gen": "Text Generation",
             "audio": "Audio Analysis",
-            "chat": "Chat Interface"
-        }
+            "chat": "Chat Interface",
+        },
     }
 
     if app_type == "Streamlit":
-        template_keys = ["blank", "data_viz", "file_upload", "form", "nlp", "image_classifier"]
-        template_options = [template_display_names["streamlit"][key] for key in template_keys]
+        template_keys = [
+            "blank",
+            "data_viz",
+            "file_upload",
+            "form",
+            "nlp",
+            "image_classifier",
+        ]
+        template_options = [
+            template_display_names["streamlit"][key] for key in template_keys
+        ]
     else:  # Gradio
         template_keys = ["blank", "image_classifier", "text_gen", "audio", "chat"]
-        template_options = [template_display_names["gradio"][key] for key in template_keys]
+        template_options = [
+            template_display_names["gradio"][key] for key in template_keys
+        ]
 
     selected_display_name = st.selectbox(
-        "Starting Template",
-        template_options,
-        key="template_display_select",
-        index=0
+        "Starting Template", template_options, key="template_display_select", index=0
     )
 
     # Find the corresponding template key
     if app_type == "Streamlit":
-        selected_key = [k for k, v in template_display_names["streamlit"].items() 
-                        if v == selected_display_name][0]
+        selected_key = [
+            k
+            for k, v in template_display_names["streamlit"].items()
+            if v == selected_display_name
+        ][0]
     else:
-        selected_key = [k for k, v in template_display_names["gradio"].items() 
-                        if v == selected_display_name][0]
+        selected_key = [
+            k
+            for k, v in template_display_names["gradio"].items()
+            if v == selected_display_name
+        ][0]
 
     # Update session state
     st.session_state.template_name = selected_key
@@ -193,7 +224,17 @@ with st.sidebar:
         available_models,
         key="model_name_radio",
         index=1 if not has_gemini_api_key else 0,  # Default to CodeT5 if no API key
-        on_change=lambda: setattr(st.session_state, 'model_name', st.session_state.model_name_radio.split(" ")[0].lower().replace(".", "") + (st.session_state.model_name_radio.split(" ")[1].lower() if len(st.session_state.model_name_radio.split(" ")) > 1 and st.session_state.model_name_radio.split(" ")[0].lower() == "gemini" else ""))
+        on_change=lambda: setattr(
+            st.session_state,
+            "model_name",
+            st.session_state.model_name_radio.split(" ")[0].lower().replace(".", "")
+            + (
+                st.session_state.model_name_radio.split(" ")[1].lower()
+                if len(st.session_state.model_name_radio.split(" ")) > 1
+                and st.session_state.model_name_radio.split(" ")[0].lower() == "gemini"
+                else ""
+            ),
+        ),
     )
 
     # Advanced options
@@ -208,15 +249,23 @@ with st.sidebar:
         st.markdown(app_type_info)
 
     with st.expander("About AI Models"):
-        model_info = get_model_info(model_name.lower().replace(" ", "_").replace(".", ""))
+        model_info = get_model_info(
+            model_name.lower().replace(" ", "_").replace(".", "")
+        )
         st.markdown(model_info)
 
     # App templates preview
     with st.expander("Template Preview"):
         if app_type.lower() == "streamlit":
-            st.code(get_streamlit_template(st.session_state.template_name)[:500] + "...", language="python")
+            st.code(
+                get_streamlit_template(st.session_state.template_name)[:500] + "...",
+                language="python",
+            )
         else:
-            st.code(get_gradio_template(st.session_state.template_name)[:500] + "...", language="python")
+            st.code(
+                get_gradio_template(st.session_state.template_name)[:500] + "...",
+                language="python",
+            )
 
 # Main content
 col1, col2 = st.columns([1, 1])
@@ -228,7 +277,7 @@ with col1:
     user_prompt = st.text_area(
         "Describe your application in detail",
         height=150,
-        placeholder="Example: Create a data visualization app that allows users to upload a CSV file and visualize the data using different chart types like bar charts, line charts, and scatter plots."
+        placeholder="Example: Create a data visualization app that allows users to upload a CSV file and visualize the data using different chart types like bar charts, line charts, and scatter plots.",
     )
 
     # Examples accordion
@@ -237,7 +286,7 @@ with col1:
             "A simple image classifier that can identify dogs, cats, and birds using a pre-trained model.",
             "A sentiment analysis app that analyzes the sentiment of user-entered text and provides a positive, negative, or neutral rating.",
             "A data dashboard that visualizes COVID-19 statistics with interactive maps and charts.",
-            "A file converter app that allows users to upload images and convert them to different formats."
+            "A file converter app that allows users to upload images and convert them to different formats.",
         ]
 
         for i, example in enumerate(example_prompts):
@@ -267,26 +316,28 @@ with col1:
             try:
                 if model_chosen == "gemini_pro_20":
                     st.session_state.generated_code = generate_with_gemini(
-                        user_prompt, 
-                        st.session_state.app_type, 
-                        st.session_state.template_name
+                        user_prompt,
+                        st.session_state.app_type,
+                        st.session_state.template_name,
                     )
                 elif model_chosen == "codet5":
                     st.session_state.generated_code = generate_with_codet5(
-                        user_prompt, 
-                        st.session_state.app_type, 
-                        st.session_state.template_name
+                        user_prompt,
+                        st.session_state.app_type,
+                        st.session_state.template_name,
                     )
                 elif model_chosen == "t0_3b":
                     st.session_state.generated_code = generate_with_t0(
-                        user_prompt, 
-                        st.session_state.app_type, 
-                        st.session_state.template_name
+                        user_prompt,
+                        st.session_state.app_type,
+                        st.session_state.template_name,
                     )
 
                 # Format the code if requested
                 if st.session_state.format_code:
-                    st.session_state.generated_code = format_code(st.session_state.generated_code)
+                    st.session_state.generated_code = format_code(
+                        st.session_state.generated_code
+                    )
 
                 # Validate the code if requested
                 if st.session_state.validate_code:
@@ -311,7 +362,13 @@ with col1:
     if st.session_state.prompt_history:
         with st.expander("Prompt History"):
             for i, prompt in enumerate(st.session_state.prompt_history):
-                st.text_area(f"Prompt {i+1}", value=prompt, height=100, disabled=True, key=f"history_{i}")
+                st.text_area(
+                    f"Prompt {i+1}",
+                    value=prompt,
+                    height=100,
+                    disabled=True,
+                    key=f"history_{i}",
+                )
 
 with col2:
     st.header("Code Preview")
@@ -345,34 +402,40 @@ with col2:
                 try:
                     if new_model == "gemini_pro_20":
                         st.session_state.generated_code = generate_with_gemini(
-                            st.session_state.prompt_history[-1], 
-                            st.session_state.app_type, 
-                            st.session_state.template_name
+                            st.session_state.prompt_history[-1],
+                            st.session_state.app_type,
+                            st.session_state.template_name,
                         )
                     elif new_model == "codet5":
                         st.session_state.generated_code = generate_with_codet5(
-                            st.session_state.prompt_history[-1], 
-                            st.session_state.app_type, 
-                            st.session_state.template_name
+                            st.session_state.prompt_history[-1],
+                            st.session_state.app_type,
+                            st.session_state.template_name,
                         )
                     elif new_model == "t0_3b":
                         st.session_state.generated_code = generate_with_t0(
-                            st.session_state.prompt_history[-1], 
-                            st.session_state.app_type, 
-                            st.session_state.template_name
+                            st.session_state.prompt_history[-1],
+                            st.session_state.app_type,
+                            st.session_state.template_name,
                         )
 
                     # Format the code if requested
                     if st.session_state.format_code:
-                        st.session_state.generated_code = format_code(st.session_state.generated_code)
+                        st.session_state.generated_code = format_code(
+                            st.session_state.generated_code
+                        )
 
                     # Success message
-                    st.success(f"Regenerated with {new_model.replace('_', ' ').title()} model")
+                    st.success(
+                        f"Regenerated with {new_model.replace('_', ' ').title()} model"
+                    )
 
                 except Exception as e:
                     st.error(f"Error regenerating code: {str(e)}")
     else:
-        st.info("Enter a prompt and click 'Generate App' to create your application code")
+        st.info(
+            "Enter a prompt and click 'Generate App' to create your application code"
+        )
 
         # Preview of templates
         with st.expander("Preview Available Templates"):
@@ -394,6 +457,6 @@ st.markdown(
         <a href="https://huggingface.co/spaces/codellama/codellama-playground">CodeLlama Playground</a>, and 
         <a href="https://huggingface.co/spaces/whackthejacker/ai-python-code-reviewer">AI Python Code Reviewer</a></p>
     </div>
-    """, 
-    unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True,
 )
