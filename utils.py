@@ -31,65 +31,110 @@ def validate_code(code):
 
 def export_code(code, filename="app.py"):
     """Create a download link for the code file"""
-    buffer = io.BytesIO()
-    buffer.write(code.encode())
-    buffer.seek(0)
-    
-    # Create a download button
-    st.download_button(
-        label=f"Download {filename}",
-        data=buffer,
-        file_name=filename,
-        mime="text/plain"
-    )
-    
-    return True
+    b64 = base64.b64encode(code.encode()).decode()
+    href = f'<a href="data:file/text;base64,{b64}" download="{filename}" class="download-btn">💾 Download {filename}</a>'
+    return href
 
 def get_app_type_info(app_type):
     """Return information about app types"""
     info = {
-        "streamlit": {
-            "name": "Streamlit",
-            "version": "1.42.2",
-            "description": "Streamlit is an open-source Python library that makes it easy to create and share beautiful, custom web apps for machine learning and data science.",
-            "website": "https://streamlit.io/",
-            "examples": ["Data dashboards", "Data visualization", "Machine learning apps", "Simple web tools"]
-        },
-        "gradio": {
-            "name": "Gradio",
-            "version": "Latest",
-            "description": "Gradio is a Python library that allows you to quickly create customizable UI components for your machine learning models, APIs, and data processing pipelines.",
-            "website": "https://gradio.app/",
-            "examples": ["ML model demos", "Image processing tools", "NLP applications", "Audio processing"]
-        }
+        "streamlit": """
+### Streamlit
+
+**Description:** Streamlit is an open-source Python framework that makes it easy to create beautiful, custom web apps for machine learning and data science.
+
+**Key Features:**
+- Rapid prototyping
+- Simple Python API
+- Real-time updates
+- Interactive widgets
+- Easy deployment
+
+**Ideal for:**
+- Data visualization dashboards
+- Machine learning demonstrations
+- Simple web tools
+- Data exploration apps
+        """,
+        "gradio": """
+### Gradio
+
+**Description:** Gradio is a Python library that allows you to quickly create customizable UI components for your machine learning models, APIs, and data processing pipelines.
+
+**Key Features:**
+- Easy interface creation
+- Multiple input/output types
+- Simplified deployment
+- API generation
+- Hugging Face integration
+
+**Ideal for:**
+- ML model demos
+- Image/audio/text processing interfaces
+- Multi-modal applications
+- Interactive machine learning demos
+        """
     }
     
-    return info.get(app_type, {})
+    return info.get(app_type, "No information available for this app type.")
 
 def get_model_info(model_name):
     """Return information about AI models"""
     info = {
-        "gemini": {
-            "name": "Gemini Pro 2.0",
-            "provider": "Google",
-            "description": "Google's latest generative AI model with advanced text generation capabilities.",
-            "strengths": ["General text generation", "Detailed code explanations", "Following complex instructions"],
-            "limitations": ["May sometimes include explanations outside of code", "Can be verbose"]
-        },
-        "codet5": {
-            "name": "CodeT5-small",
-            "provider": "Salesforce",
-            "description": "A smaller version of the CodeT5 model specifically fine-tuned for code generation tasks.",
-            "strengths": ["Focused on code generation", "More concise output", "Understands code context"],
-            "limitations": ["Smaller context window", "Less general knowledge than larger models"]
-        },
-        "t0": {
-            "name": "T0_3B",
-            "provider": "BigScience",
-            "description": "A 3 billion parameter language model designed for zero-shot tasks.",
-            "strengths": ["Good at following instructions", "Handles various prompts", "Efficient for smaller tasks"],
-            "limitations": ["Not specialized for code", "Smaller than state-of-the-art models"]
-        }
+        "gemini_pro_20": """
+### Gemini Pro 2.0
+
+**Provider:** Google
+
+**Description:** Google's powerful large language model with advanced code generation capabilities.
+
+**Strengths:**
+- High-quality code generation
+- Follows instructions well
+- Handles complex prompts
+- Good documentation in generated code
+
+**Limitations:**
+- May require API key
+- Rate limits may apply
+- Can be relatively slower than local models
+        """,
+        "codet5": """
+### CodeT5-small
+
+**Provider:** Salesforce
+
+**Description:** Specialized code generation model fine-tuned specifically for programming tasks.
+
+**Strengths:**
+- Focused on code generation
+- More lightweight than larger models
+- Faster inference times
+- Can run locally
+
+**Limitations:**
+- Smaller context window
+- Less general knowledge
+- May produce simpler code
+        """,
+        "t0_3b": """
+### T0_3B
+
+**Provider:** BigScience
+
+**Description:** A 3 billion parameter language model trained on diverse datasets with zero-shot capabilities.
+
+**Strengths:**
+- General-purpose capabilities
+- Good instruction following
+- Diverse training data
+- Balance of size and performance
+
+**Limitations:**
+- Not specialized for code generation
+- May require adaptation of templates
+- Medium-sized model (3B parameters)
+        """
     }
     
-    return info.get(model_name, {})
+    return info.get(model_name, "No information available for this model.")

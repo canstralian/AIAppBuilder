@@ -1,1123 +1,709 @@
 def get_streamlit_template(template_name):
     """Returns template code for Streamlit apps"""
-    
     templates = {
-        "blank": """import streamlit as st
+        "blank": """
+import streamlit as st
 
-# Configure page
-st.set_page_config(
-    page_title="My Streamlit App",
-    page_icon="🚀",
-    layout="wide"
-)
-
-# Main app
 st.title("My Streamlit App")
-st.write("Welcome to my app! Edit this template to create your own app.")
 
-# Add your app components below
+# Add your app content here
+st.write("Hello, world!")
 """,
-
-        "data_viz": """import streamlit as st
+        "data_viz": """
+import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Configure page
-st.set_page_config(
-    page_title="Data Visualization App",
-    page_icon="📊",
-    layout="wide"
-)
+st.title("Data Visualization App")
 
-# App title and description
-st.title("Data Visualization Dashboard")
-st.write("Upload your CSV data or use the sample dataset to create visualizations")
+# Upload data
+uploaded_file = st.file_uploader("Upload your CSV file", type=['csv'])
 
-# Sidebar
-with st.sidebar:
-    st.header("Settings")
+if uploaded_file is not None:
+    # Read the data
+    df = pd.read_csv(uploaded_file)
     
-    # Option to use sample data or upload
-    data_option = st.radio(
-        "Choose data source:",
-        ["Use sample data", "Upload my data"]
-    )
+    # Show the data
+    st.subheader("Data Preview")
+    st.dataframe(df.head())
     
-    # Visualization options
-    chart_type = st.selectbox(
-        "Select chart type:",
-        ["Line Chart", "Bar Chart", "Histogram", "Scatter Plot", "Heatmap"]
-    )
-
-# Data loading
-if data_option == "Use sample data":
-    # Generate sample data
-    data = pd.DataFrame({
-        'x': range(1, 101),
-        'y': np.random.randn(100).cumsum(),
-        'category': np.random.choice(['A', 'B', 'C'], 100)
-    })
-    st.success("Using sample data")
-else:
-    # File uploader
-    uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
+    # Data statistics
+    st.subheader("Data Statistics")
+    st.write(df.describe())
     
-    if uploaded_file is not None:
-        try:
-            data = pd.read_csv(uploaded_file)
-            st.success("Data loaded successfully!")
-        except Exception as e:
-            st.error(f"Error: {e}")
-            # Use sample data as fallback
-            data = pd.DataFrame({
-                'x': range(1, 101),
-                'y': np.random.randn(100).cumsum(),
-                'category': np.random.choice(['A', 'B', 'C'], 100)
-            })
-            st.info("Using sample data as fallback")
-    else:
-        st.info("Please upload a CSV file")
-        # Use sample data as placeholder
-        data = pd.DataFrame({
-            'x': range(1, 101),
-            'y': np.random.randn(100).cumsum(),
-            'category': np.random.choice(['A', 'B', 'C'], 100)
-        })
-
-# Display data preview
-st.subheader("Data Preview")
-st.dataframe(data.head())
-
-# Visualization
-st.subheader("Visualization")
-if 'data' in locals():
     # Select columns for visualization
-    if len(data.columns) > 0:
-        x_col = st.selectbox("Select X-axis column:", data.columns)
+    st.subheader("Visualization")
+    
+    # Choose visualization type
+    viz_type = st.selectbox("Select Visualization Type", 
+                           ["Bar Chart", "Line Chart", "Scatter Plot", "Histogram", "Heatmap"])
+    
+    # Select columns based on visualization type
+    if viz_type in ["Bar Chart", "Line Chart", "Histogram"]:
+        column = st.selectbox("Select a column", df.columns)
         
-        if chart_type != "Histogram":
-            y_col = st.selectbox("Select Y-axis column:", data.columns)
-        
-        # Create visualization based on selection
-        if chart_type == "Line Chart":
-            st.line_chart(data.set_index(x_col)[y_col])
-            
-        elif chart_type == "Bar Chart":
-            st.bar_chart(data.set_index(x_col)[y_col])
-            
-        elif chart_type == "Histogram":
+        if viz_type == "Bar Chart":
             fig, ax = plt.subplots()
-            ax.hist(data[x_col], bins=20)
-            ax.set_xlabel(x_col)
-            ax.set_ylabel("Frequency")
+            df[column].value_counts().plot(kind='bar', ax=ax)
             st.pyplot(fig)
             
-        elif chart_type == "Scatter Plot":
+        elif viz_type == "Line Chart":
             fig, ax = plt.subplots()
-            ax.scatter(data[x_col], data[y_col])
-            ax.set_xlabel(x_col)
-            ax.set_ylabel(y_col)
+            df[column].plot(kind='line', ax=ax)
             st.pyplot(fig)
             
-        elif chart_type == "Heatmap":
-            # Only show heatmap if we have numeric data
-            numeric_cols = data.select_dtypes(include='number').columns.tolist()
-            if len(numeric_cols) > 2:
-                fig, ax = plt.subplots(figsize=(10, 8))
-                sns.heatmap(data[numeric_cols].corr(), annot=True, cmap="coolwarm", ax=ax)
-                st.pyplot(fig)
-            else:
-                st.error("Not enough numeric columns for a heatmap")
-    else:
-        st.error("The dataset has no columns")
-""",
-
-        "file_upload": """import streamlit as st
-import pandas as pd
-import io
-from PIL import Image
-import base64
-
-# Configure page
-st.set_page_config(
-    page_title="File Upload Demo",
-    page_icon="📂",
-    layout="wide"
-)
-
-# App title and description
-st.title("File Upload and Processing Demo")
-st.write("Upload different file types and see how they can be processed")
-
-# Sidebar
-with st.sidebar:
-    st.header("Options")
-    file_type = st.radio(
-        "Select file type to upload:",
-        ["CSV/Excel Data", "Image", "Text File"]
-    )
-
-# Main content
-st.header(f"Upload a {file_type}")
-
-if file_type == "CSV/Excel Data":
-    uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
-    
-    if uploaded_file is not None:
-        try:
-            # Check file type and read accordingly
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
+        elif viz_type == "Histogram":
+            fig, ax = plt.subplots()
+            df[column].plot(kind='hist', ax=ax)
+            st.pyplot(fig)
             
-            st.success(f"File '{uploaded_file.name}' loaded successfully!")
-            
-            # Display data info
-            st.subheader("Data Preview")
-            st.dataframe(df.head())
-            
-            st.subheader("Data Statistics")
-            st.write(f"Rows: {df.shape[0]}, Columns: {df.shape[1]}")
-            
-            # Basic data exploration
-            if st.checkbox("Show column information"):
-                st.write(df.dtypes)
-            
-            if st.checkbox("Show summary statistics"):
-                st.write(df.describe())
-            
-            # Allow downloading processed data
-            if st.button("Process Data (Remove NAs)"):
-                processed_df = df.dropna()
-                st.write(f"Processed data shape: {processed_df.shape}")
-                st.dataframe(processed_df.head())
-                
-                # Create download link
-                csv = processed_df.to_csv(index=False)
-                b64 = base64.b64encode(csv.encode()).decode()
-                href = f'<a href="data:file/csv;base64,{b64}" download="processed_data.csv">Download Processed CSV</a>'
-                st.markdown(href, unsafe_allow_html=True)
-                
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-elif file_type == "Image":
-    uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
-    
-    if uploaded_file is not None:
-        try:
-            image = Image.open(uploaded_file)
-            
-            # Display original image
-            st.subheader("Original Image")
-            st.image(image, caption="Uploaded Image", use_column_width=True)
-            
-            # Image processing options
-            st.subheader("Image Processing")
-            processing_option = st.selectbox(
-                "Select an image processing option:",
-                ["Resize", "Rotate", "Grayscale", "None"]
-            )
-            
-            if processing_option == "Resize":
-                new_width = st.slider("New width:", 100, 1000, 300)
-                ratio = new_width / image.width
-                new_height = int(image.height * ratio)
-                resized_image = image.resize((new_width, new_height))
-                st.image(resized_image, caption="Resized Image", use_column_width=True)
-                
-            elif processing_option == "Rotate":
-                rotation_angle = st.slider("Rotation angle:", 0, 360, 90)
-                rotated_image = image.rotate(rotation_angle)
-                st.image(rotated_image, caption="Rotated Image", use_column_width=True)
-                
-            elif processing_option == "Grayscale":
-                grayscale_image = image.convert("L")
-                st.image(grayscale_image, caption="Grayscale Image", use_column_width=True)
-            
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-elif file_type == "Text File":
-    uploaded_file = st.file_uploader("Choose a text file", type=["txt"])
-    
-    if uploaded_file is not None:
-        try:
-            # Read text file
-            content = uploaded_file.read().decode("utf-8")
-            
-            # Display content
-            st.subheader("File Content")
-            st.text_area("Text content:", value=content, height=300)
-            
-            # Text analysis
-            st.subheader("Text Analysis")
-            text_stats = {
-                "Characters": len(content),
-                "Words": len(content.split()),
-                "Lines": len(content.splitlines()),
-            }
-            
-            st.write(text_stats)
-            
-            # Additional text processing options
-            processing_option = st.selectbox(
-                "Text processing options:",
-                ["None", "Convert to Uppercase", "Convert to Lowercase", "Count Word Frequency"]
-            )
-            
-            if processing_option == "Convert to Uppercase":
-                st.text_area("Uppercase text:", value=content.upper(), height=200)
-                
-            elif processing_option == "Convert to Lowercase":
-                st.text_area("Lowercase text:", value=content.lower(), height=200)
-                
-            elif processing_option == "Count Word Frequency":
-                words = content.lower().split()
-                word_freq = {}
-                for word in words:
-                    word = word.strip(".,!?:;-\"'()[]{}")
-                    if word and len(word) > 1:  # Ignore single character words and empty strings
-                        word_freq[word] = word_freq.get(word, 0) + 1
-                
-                # Display as DataFrame
-                word_freq_df = pd.DataFrame(
-                    {"Word": list(word_freq.keys()), "Frequency": list(word_freq.values())}
-                ).sort_values("Frequency", ascending=False)
-                
-                st.dataframe(word_freq_df)
-                
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-# Footer
-st.markdown("---")
-st.markdown("This app demonstrates how to handle various file uploads in Streamlit")
-""",
-
-        "form": """import streamlit as st
-
-# Configure page
-st.set_page_config(
-    page_title="Streamlit Form Demo",
-    page_icon="📝",
-    layout="wide"
-)
-
-# App title and description
-st.title("Streamlit Form Demo")
-st.write("This app demonstrates how to create and handle forms in Streamlit")
-
-# Initialize session state variables
-if 'form_submitted' not in st.session_state:
-    st.session_state.form_submitted = False
-if 'submissions' not in st.session_state:
-    st.session_state.submissions = []
-
-# Main layout
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.header("Registration Form")
-    
-    # Create a form
-    with st.form(key="registration_form"):
-        st.write("Please fill out the form below")
+    elif viz_type == "Scatter Plot":
+        x_column = st.selectbox("Select X column", df.columns)
+        y_column = st.selectbox("Select Y column", df.columns)
         
-        # Form fields
-        name = st.text_input("Full Name")
-        email = st.text_input("Email Address")
-        
-        age = st.slider("Age", min_value=18, max_value=100, value=30)
-        
-        gender = st.selectbox(
-            "Gender",
-            ["Prefer not to say", "Male", "Female", "Non-binary", "Other"]
-        )
-        
-        interests = st.multiselect(
-            "Interests",
-            ["Technology", "Sports", "Arts", "Science", "Music", "Travel", "Food", "Reading"]
-        )
-        
-        experience = st.radio(
-            "Programming Experience",
-            ["Beginner", "Intermediate", "Advanced"]
-        )
-        
-        bio = st.text_area("Short Bio", max_chars=500)
-        
-        terms = st.checkbox("I agree to the terms and conditions")
-        
-        # Submit button
-        submitted = st.form_submit_button("Submit Form")
-        
-        if submitted:
-            # Validate form
-            if not name or not email:
-                st.error("Please fill out all required fields")
-            elif "@" not in email or "." not in email:
-                st.error("Please enter a valid email address")
-            elif not terms:
-                st.error("You must agree to the terms and conditions")
-            else:
-                # Store form data
-                form_data = {
-                    "name": name,
-                    "email": email,
-                    "age": age,
-                    "gender": gender,
-                    "interests": interests,
-                    "experience": experience,
-                    "bio": bio
-                }
-                
-                st.session_state.submissions.append(form_data)
-                st.session_state.form_submitted = True
-                st.success("Form submitted successfully!")
-
-with col2:
-    st.header("Submissions")
-    
-    if st.session_state.form_submitted:
-        # Display the latest submission
-        latest = st.session_state.submissions[-1]
-        
-        st.subheader("Latest Submission")
-        st.write(f"**Name:** {latest['name']}")
-        st.write(f"**Email:** {latest['email']}")
-        st.write(f"**Age:** {latest['age']}")
-        st.write(f"**Gender:** {latest['gender']}")
-        st.write(f"**Experience:** {latest['experience']}")
-        
-        st.write("**Interests:**")
-        if latest['interests']:
-            for interest in latest['interests']:
-                st.write(f"- {interest}")
-        else:
-            st.write("None selected")
-            
-        st.write("**Bio:**")
-        st.write(latest['bio'] if latest['bio'] else "No bio provided")
-        
-        # Option to clear form
-        if st.button("Clear Form"):
-            st.session_state.form_submitted = False
-    else:
-        st.info("No submissions yet. Fill out the form to see results.")
-    
-    # Show all submissions
-    if st.session_state.submissions:
-        st.subheader("All Submissions")
-        for i, submission in enumerate(st.session_state.submissions):
-            with st.expander(f"Submission {i+1}: {submission['name']}"):
-                for key, value in submission.items():
-                    if key == "interests":
-                        st.write(f"**{key.capitalize()}:** {', '.join(value) if value else 'None'}")
-                    else:
-                        st.write(f"**{key.capitalize()}:** {value}")
-
-# Advanced form features
-st.header("Advanced Form Features")
-
-tab1, tab2 = st.tabs(["File Upload Form", "Conditional Form"])
-
-with tab1:
-    with st.form(key="file_upload_form"):
-        st.write("Upload and process files")
-        
-        name = st.text_input("Document Name")
-        file = st.file_uploader("Upload Document", type=["pdf", "docx", "txt"])
-        tags = st.text_input("Tags (comma separated)")
-        
-        submit_file = st.form_submit_button("Upload Document")
-        
-        if submit_file and file:
-            st.success(f"Document '{name}' uploaded successfully!")
-            st.write(f"Filename: {file.name}")
-            st.write(f"Size: {file.size} bytes")
-            st.write(f"Tags: {tags}")
-
-with tab2:
-    with st.form(key="conditional_form"):
-        st.write("Form with conditional fields")
-        
-        form_type = st.selectbox(
-            "Form Type",
-            ["Personal", "Business", "Educational"]
-        )
-        
-        # Basic fields for all form types
-        name = st.text_input("Name or Organization")
-        email = st.text_input("Contact Email")
-        
-        # Conditional fields based on form type
-        if form_type == "Personal":
-            st.write("Personal Information")
-            age = st.number_input("Age", min_value=18, max_value=100)
-            hobby = st.text_input("Favorite Hobby")
-            
-        elif form_type == "Business":
-            st.write("Business Information")
-            company_size = st.selectbox(
-                "Company Size",
-                ["1-10", "11-50", "51-200", "201-500", "500+"]
-            )
-            industry = st.text_input("Industry")
-            
-        elif form_type == "Educational":
-            st.write("Educational Information")
-            institution = st.text_input("Institution Name")
-            field = st.text_input("Field of Study")
-            
-        submit_conditional = st.form_submit_button("Submit")
-        
-        if submit_conditional:
-            st.success("Form submitted successfully!")
-            st.write(f"Form Type: {form_type}")
-            st.write(f"Name/Organization: {name}")
-            st.write(f"Email: {email}")
-            
-            if form_type == "Personal":
-                st.write(f"Age: {age}")
-                st.write(f"Hobby: {hobby}")
-            elif form_type == "Business":
-                st.write(f"Company Size: {company_size}")
-                st.write(f"Industry: {industry}")
-            elif form_type == "Educational":
-                st.write(f"Institution: {institution}")
-                st.write(f"Field of Study: {field}")
-""",
-
-        "nlp": """import streamlit as st
-import re
-import pandas as pd
-from collections import Counter
-import matplotlib.pyplot as plt
-
-# Configure page
-st.set_page_config(
-    page_title="NLP Analysis App",
-    page_icon="📊",
-    layout="wide"
-)
-
-# App title and description
-st.title("Text Analysis Tool")
-st.write("Analyze text data with various NLP techniques")
-
-# Sidebar for options
-with st.sidebar:
-    st.header("Options")
-    
-    # Text input option
-    text_input_option = st.radio(
-        "Text Input Method:",
-        ["Sample Text", "Enter Your Text", "Upload Text File"]
-    )
-    
-    # Analysis options
-    st.subheader("Analysis Options")
-    
-    show_word_count = st.checkbox("Word Count", value=True)
-    show_char_count = st.checkbox("Character Count", value=True)
-    show_sentence_count = st.checkbox("Sentence Count", value=True)
-    show_word_frequency = st.checkbox("Word Frequency", value=True)
-    show_word_cloud = st.checkbox("Word Cloud", value=False)
-    
-    # Advanced options
-    with st.expander("Advanced Options"):
-        min_word_length = st.slider("Minimum word length for analysis:", 1, 10, 3)
-        max_words_to_display = st.slider("Max words to display:", 10, 100, 25)
-        remove_stopwords = st.checkbox("Remove stopwords", value=True)
-        custom_stopwords = st.text_input("Add custom stopwords (comma separated):")
-        
-        if custom_stopwords:
-            custom_stopwords = [word.strip() for word in custom_stopwords.split(",")]
-        else:
-            custom_stopwords = []
-
-# Main content
-# Text input
-if text_input_option == "Sample Text":
-    sample_text = "Natural language processing (NLP) is a subfield of linguistics, computer science, and artificial intelligence concerned with the interactions between computers and human language, in particular how to program computers to process and analyze large amounts of natural language data. The goal is a computer capable of understanding the contents of documents, including the contextual nuances of the language within them."
-    text = sample_text
-    st.info("Using sample text about NLP. You can change this in the sidebar.")
-    
-elif text_input_option == "Enter Your Text":
-    text = st.text_area("Enter your text for analysis:", height=200)
-    
-else:  # Upload file
-    uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
-    if uploaded_file is not None:
-        text = uploaded_file.read().decode("utf-8")
-        st.success(f"File uploaded successfully!")
-    else:
-        text = ""
-        st.info("Please upload a text file")
-
-# Analyze text if provided
-if text:
-    # Display the text with expandable section if it's long
-    if len(text) > 500:
-        with st.expander("View Text"):
-            st.write(text)
-    else:
-        st.subheader("Text to Analyze")
-        st.write(text)
-    
-    # Text preprocessing
-    processed_text = text
-    
-    # Convert to lowercase
-    processed_text = processed_text.lower()
-    
-    # Remove punctuation
-    processed_text = re.sub(r'[^\w\s]', '', processed_text)
-    processed_text = re.sub(r'\d+', '', processed_text)
-    
-    # Split into words
-    words = processed_text.split()
-    
-    # Filter by length and remove stopwords
-    if remove_stopwords:
-        # Common English stopwords
-        stopwords = [
-            "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", 
-            "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", 
-            "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", 
-            "theirs", "themselves", "what", "which", "who", "whom", "this", "that", 
-            "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", 
-            "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", 
-            "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", 
-            "at", "by", "for", "with", "about", "against", "between", "into", "through", 
-            "during", "before", "after", "above", "below", "to", "from", "up", "down", 
-            "in", "out", "on", "off", "over", "under", "again", "further", "then", 
-            "once", "here", "there", "when", "where", "why", "how", "all", "any", 
-            "both", "each", "few", "more", "most", "other", "some", "such", "no", 
-            "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", 
-            "t", "can", "will", "just", "don", "should", "now"
-        ]
-        # Add custom stopwords
-        stopwords.extend(custom_stopwords)
-        
-        # Filter words
-        filtered_words = [word for word in words if word not in stopwords and len(word) >= min_word_length]
-    else:
-        filtered_words = [word for word in words if len(word) >= min_word_length]
-    
-    # Analysis results
-    st.header("Analysis Results")
-    
-    # Show text stats
-    col1, col2, col3 = st.columns(3)
-    
-    if show_char_count:
-        with col1:
-            st.metric("Character Count", len(text))
-    
-    if show_word_count:
-        with col2:
-            st.metric("Word Count", len(words))
-    
-    if show_sentence_count:
-        with col3:
-            # Simple sentence counting by splitting on periods, exclamation points, and question marks
-            sentences = re.split(r'[.!?]+', text)
-            # Remove empty strings
-            sentences = [s for s in sentences if s.strip()]
-            st.metric("Sentence Count", len(sentences))
-    
-    # Word frequency analysis
-    if show_word_frequency and filtered_words:
-        st.subheader("Word Frequency Analysis")
-        
-        # Calculate word frequencies
-        word_freq = Counter(filtered_words)
-        most_common = word_freq.most_common(max_words_to_display)
-        
-        # Display as bar chart
-        fig, ax = plt.subplots(figsize=(10, 5))
-        words_df = pd.DataFrame(most_common, columns=['Word', 'Frequency'])
-        
-        # Sort by frequency
-        words_df = words_df.sort_values('Frequency')
-        
-        # Plot horizontal bar chart
-        ax.barh(words_df['Word'], words_df['Frequency'], color='skyblue')
-        ax.set_xlabel('Frequency')
-        ax.set_ylabel('Word')
-        ax.set_title(f'Top {len(most_common)} Words by Frequency')
-        
-        # Add frequency labels
-        for i, v in enumerate(words_df['Frequency']):
-            ax.text(v + 0.1, i, str(v), color='black', va='center')
-        
+        fig, ax = plt.subplots()
+        df.plot.scatter(x=x_column, y=y_column, ax=ax)
         st.pyplot(fig)
         
-        # Show table of words
-        st.dataframe(words_df)
+    elif viz_type == "Heatmap":
+        # Select only numeric columns
+        numeric_df = df.select_dtypes(include=[np.number])
         
-    # Word Cloud
-    if show_word_cloud and filtered_words:
-        try:
-            from wordcloud import WordCloud
-            
-            st.subheader("Word Cloud")
-            
-            # Generate word cloud
-            wordcloud = WordCloud(
-                width=800, 
-                height=400, 
-                background_color="white", 
-                max_words=150, 
-                contour_width=3, 
-                contour_color='steelblue'
-            ).generate(' '.join(filtered_words))
-            
-            # Display word cloud
-            fig, ax = plt.subplots(figsize=(10, 5))
-            ax.imshow(wordcloud, interpolation='bilinear')
-            ax.axis("off")
+        if len(numeric_df.columns) > 1:
+            fig, ax = plt.subplots(figsize=(10, 8))
+            sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', ax=ax)
             st.pyplot(fig)
-            
-        except ImportError:
-            st.warning("WordCloud package is not installed. Cannot generate word cloud.")
-            st.code("pip install wordcloud", language="bash")
-else:
-    st.info("Enter or upload some text to analyze")
-
-# Footer
-st.markdown("---")
-st.caption("Text Analysis Tool powered by NLTK and Streamlit")
+        else:
+            st.error("Need at least 2 numeric columns for a correlation heatmap")
 """,
+        "file_upload": """
+import streamlit as st
+import pandas as pd
+import io
 
-        "image_classifier": """import streamlit as st
-import numpy as np
-from PIL import Image
-import time
+st.title("File Upload App")
+st.write("Upload a file and process it")
 
-# Configure page
-st.set_page_config(
-    page_title="Image Classification Demo",
-    page_icon="🖼️",
-    layout="wide"
-)
+uploaded_file = st.file_uploader("Choose a file", type=['csv', 'txt', 'xlsx', 'json'])
 
-# App title and description
-st.title("Image Classification Demo")
-st.write("Upload an image to classify it using a pre-trained model")
-
-# Sidebar
-with st.sidebar:
-    st.header("Model Settings")
+if uploaded_file is not None:
+    # Get file details
+    file_details = {
+        "Filename": uploaded_file.name,
+        "File size": uploaded_file.size,
+        "File type": uploaded_file.type
+    }
     
-    model_type = st.selectbox(
-        "Select a model:",
-        ["MobileNet", "ResNet50", "VGG16"]
-    )
+    st.write("### File Details")
+    st.json(file_details)
     
-    confidence_threshold = st.slider(
-        "Confidence threshold:",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.5,
-        step=0.05
-    )
-    
-    st.subheader("About")
-    st.markdown("""
-    This app demonstrates image classification using deep learning models.
-    
-    **Note:** This is a demo app, and it uses simulated predictions.
-    """)
-
-# Main content
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    # Image upload
-    uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
-    
-    if uploaded_file is not None:
-        # Display the uploaded image
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+    # Determine file type and process accordingly
+    if uploaded_file.type == "text/csv":
+        # Read CSV
+        df = pd.read_csv(uploaded_file)
+        st.write("### Data Preview")
+        st.dataframe(df.head())
         
-        # Process button
-        if st.button("Classify Image"):
-            # Show a progress bar for the classification process
-            with st.spinner("Classifying..."):
-                progress_bar = st.progress(0)
-                for i in range(100):
-                    # Simulate processing time
-                    time.sleep(0.01)
-                    progress_bar.progress(i + 1)
-                
-                # Simulate model prediction
-                # In a real app, this would call an actual model
-                if model_type == "MobileNet":
-                    classes = ["cat", "dog", "bird", "car", "flower"]
-                elif model_type == "ResNet50":
-                    classes = ["person", "chair", "table", "building", "tree"]
-                else:  # VGG16
-                    classes = ["airplane", "boat", "truck", "bicycle", "motorcycle"]
-                
-                # Generate random probabilities
-                probabilities = np.random.dirichlet(np.ones(len(classes)), size=1)[0]
-                
-                # Sort by probability (descending)
-                sorted_indices = np.argsort(probabilities)[::-1]
-                sorted_classes = [classes[i] for i in sorted_indices]
-                sorted_probs = [probabilities[i] for i in sorted_indices]
-                
-                # Filter by confidence threshold
-                filtered_results = [(cls, prob) for cls, prob in zip(sorted_classes, sorted_probs) if prob >= confidence_threshold]
-                
-                # Success message
-                st.success("Classification complete!")
-                
-                # Display results in the second column
-                with col2:
-                    st.header("Classification Results")
-                    
-                    if filtered_results:
-                        # Show top prediction
-                        st.subheader(f"Top prediction: {filtered_results[0][0].title()}")
-                        
-                        # Display all predictions above threshold
-                        st.write("All predictions above threshold:")
-                        
-                        # Create a bar chart for the predictions
-                        chart_data = {
-                            "Class": [c.title() for c, _ in filtered_results],
-                            "Probability": [float(p) for _, p in filtered_results]
-                        }
-                        
-                        # Display as a bar chart
-                        st.bar_chart(chart_data, x="Class", y="Probability")
-                        
-                        # Also show as a table
-                        for i, (cls, prob) in enumerate(filtered_results):
-                            st.write(f"{i+1}. **{cls.title()}**: {prob:.2f}")
-                    else:
-                        st.info(f"No predictions with confidence above {confidence_threshold}")
+        # Simple data analysis
+        st.write("### Data Summary")
+        st.write(f"Rows: {df.shape[0]}, Columns: {df.shape[1]}")
+        
+        if st.checkbox("Show column information"):
+            st.write(df.dtypes)
+        
+        if st.checkbox("Show summary statistics"):
+            st.write(df.describe())
+            
+    elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        # Read Excel
+        df = pd.read_excel(uploaded_file)
+        st.write("### Data Preview")
+        st.dataframe(df.head())
+        
+    elif uploaded_file.type == "application/json":
+        # Read JSON
+        df = pd.read_json(uploaded_file)
+        st.write("### Data Preview")
+        st.dataframe(df.head())
+        
+    elif uploaded_file.type == "text/plain":
+        # Read text file
+        text_data = uploaded_file.read().decode("utf-8")
+        st.write("### Text Content (first 500 characters)")
+        st.text(text_data[:500] + "..." if len(text_data) > 500 else text_data)
+        
+        # Text analysis
+        if st.checkbox("Show text analysis"):
+            word_count = len(text_data.split())
+            line_count = len(text_data.splitlines())
+            char_count = len(text_data)
+            
+            st.write(f"Word count: {word_count}")
+            st.write(f"Line count: {line_count}")
+            st.write(f"Character count: {char_count}")
+            
+    # Download processed data
+    if "df" in locals():
+        st.write("### Download Processed Data")
+        
+        # CSV download
+        csv = df.to_csv(index=False)
+        st.download_button(
+            label="Download as CSV",
+            data=csv,
+            file_name=f"processed_{uploaded_file.name.split('.')[0]}.csv",
+            mime="text/csv"
+        )
+""",
+        "form": """
+import streamlit as st
+import pandas as pd
+
+st.title("Form Application")
+st.write("Fill out the form below to submit your information")
+
+# Create a form
+with st.form(key="my_form"):
+    # Form fields
+    name = st.text_input("Name")
+    email = st.text_input("Email")
+    age = st.number_input("Age", min_value=0, max_value=120, step=1)
+    
+    # Date selection
+    date = st.date_input("Select a date")
+    
+    # Category selection
+    category = st.selectbox("Category", ["Option 1", "Option 2", "Option 3"])
+    
+    # Multiple selection
+    options = st.multiselect("Select one or more options", 
+                            ["Feature A", "Feature B", "Feature C", "Feature D"])
+    
+    # Slider
+    rating = st.slider("Rate your experience", 0, 10, 5)
+    
+    # Text area
+    comments = st.text_area("Additional comments")
+    
+    # Checkbox for terms
+    terms_agree = st.checkbox("I agree to the terms and conditions")
+    
+    # Submit button
+    submit_button = st.form_submit_button(label="Submit")
+
+# Handle form submission
+if submit_button:
+    if not terms_agree:
+        st.error("You must agree to the terms and conditions")
+    elif not name or not email:
+        st.error("Name and Email are required fields")
     else:
-        st.info("Please upload an image file")
+        # Create a dictionary with form data
+        form_data = {
+            "Name": name,
+            "Email": email,
+            "Age": age,
+            "Date": date,
+            "Category": category,
+            "Selected Options": ", ".join(options),
+            "Rating": rating,
+            "Comments": comments
+        }
         
-        # Sample images
-        st.subheader("Or try a sample image:")
+        # Convert to DataFrame for display
+        df = pd.DataFrame([form_data])
         
-        sample_images = [
-            {"name": "Sample Cat", "path": "https://storage.googleapis.com/gradio-static-files/cat.jpg"},
-            {"name": "Sample Car", "path": "https://storage.googleapis.com/gradio-static-files/car.jpg"},
-            {"name": "Sample Bird", "path": "https://storage.googleapis.com/gradio-static-files/bird.jpg"}
-        ]
+        st.success("Form submitted successfully!")
         
-        # Display sample images as buttons
-        cols = st.columns(len(sample_images))
-        for i, sample in enumerate(sample_images):
-            with cols[i]:
-                st.image(sample["path"], caption=sample["name"], width=150)
-                if st.button(f"Use {sample['name']}", key=f"sample_{i}"):
-                    # In a real app, you would download and process the sample image
-                    st.write(f"Selected {sample['name']} (This would trigger classification in a complete app)")
+        # Display the submitted data
+        st.subheader("Submitted Information")
+        st.table(df)
+        
+        # Option to download the data
+        csv = df.to_csv(index=False)
+        st.download_button(
+            label="Download data as CSV",
+            data=csv,
+            file_name="form_submission.csv",
+            mime="text/csv"
+        )
+""",
+        "nlp": """
+import streamlit as st
+import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from collections import Counter
+import string
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Additional info
-st.markdown("---")
-with st.expander("How it works"):
-    st.write("""
-    This application uses a deep learning model to classify images. Here's how it works:
+# Download NLTK resources
+@st.cache_resource
+def download_nltk_resources():
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('wordnet')
+
+download_nltk_resources()
+
+st.title("NLP Text Analysis Tool")
+st.write("Enter text to analyze it with NLP techniques")
+
+# Text input
+text_input = st.text_area("Enter your text here:", height=200)
+
+if text_input:
+    # Tokenization
+    st.subheader("Text Analysis")
     
-    1. You upload an image or select a sample image
-    2. The image is preprocessed (resized, normalized)
-    3. The preprocessed image is fed into a pre-trained neural network
-    4. The model outputs probability scores for various classes
-    5. We display the top predictions above your selected confidence threshold
+    tab1, tab2, tab3, tab4 = st.tabs(["Basic Stats", "Word Frequency", "Sentiment", "Advanced"])
     
-    In a real application, this would use actual models like MobileNet, ResNet, or VGG
-    that have been trained on datasets like ImageNet.
-    """)
+    with tab1:
+        # Basic text statistics
+        words = word_tokenize(text_input)
+        sentences = sent_tokenize(text_input)
+        
+        # Remove punctuation
+        words_no_punc = [word for word in words if word not in string.punctuation]
+        
+        # Remove stopwords
+        stop_words = set(stopwords.words('english'))
+        filtered_words = [word for word in words_no_punc if word.lower() not in stop_words]
+        
+        # Display statistics
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Word Count", len(words_no_punc))
+        
+        with col2:
+            st.metric("Sentence Count", len(sentences))
+            
+        with col3:
+            st.metric("Unique Words", len(set(word.lower() for word in words_no_punc)))
+        
+        # Average word length
+        avg_word_length = sum(len(word) for word in words_no_punc) / len(words_no_punc) if words_no_punc else 0
+        
+        # Average sentence length
+        avg_sent_length = len(words_no_punc) / len(sentences) if sentences else 0
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Avg Word Length", f"{avg_word_length:.2f}")
+        
+        with col2:
+            st.metric("Avg Sentence Length", f"{avg_sent_length:.2f}")
+    
+    with tab2:
+        # Word frequency analysis
+        word_freq = Counter(word.lower() for word in filtered_words)
+        
+        # Create DataFrame for visualization
+        word_freq_df = pd.DataFrame(word_freq.most_common(20), columns=['Word', 'Frequency'])
+        
+        st.subheader("Top 20 Words")
+        
+        # Bar chart
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(x='Frequency', y='Word', data=word_freq_df, ax=ax)
+        st.pyplot(fig)
+        
+        # Show frequency table
+        st.dataframe(word_freq_df)
+        
+    with tab3:
+        st.info("Sentiment analysis feature coming soon!")
+        
+    with tab4:
+        # Advanced NLP options
+        st.subheader("Advanced NLP Processing")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Show Stemming"):
+                stemmer = PorterStemmer()
+                stemmed_words = [stemmer.stem(word) for word in filtered_words[:20]]
+                
+                # Create comparison DataFrame
+                stem_df = pd.DataFrame({
+                    'Original Word': filtered_words[:20],
+                    'Stemmed Word': stemmed_words
+                })
+                
+                st.write("Stemming (first 20 words)")
+                st.dataframe(stem_df)
+        
+        with col2:
+            if st.button("Show Lemmatization"):
+                lemmatizer = WordNetLemmatizer()
+                lemmatized_words = [lemmatizer.lemmatize(word) for word in filtered_words[:20]]
+                
+                # Create comparison DataFrame
+                lemma_df = pd.DataFrame({
+                    'Original Word': filtered_words[:20],
+                    'Lemmatized Word': lemmatized_words
+                })
+                
+                st.write("Lemmatization (first 20 words)")
+                st.dataframe(lemma_df)
+""",
+        "image_classifier": """
+import streamlit as st
+from PIL import Image
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+
+# Load pre-trained model
+@st.cache_resource
+def load_model():
+    model = MobileNetV2(weights='imagenet')
+    return model
+
+model = load_model()
+
+st.title("Image Classification App")
+st.write("Upload an image to classify it using MobileNetV2 pre-trained on ImageNet")
+
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # Display the uploaded image
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+    
+    # Resize and preprocess the image
+    img = image.resize((224, 224))
+    img_array = np.array(img)
+    
+    # Check if the image has 3 channels (RGB)
+    if len(img_array.shape) == 3 and img_array.shape[2] == 3:
+        # Preprocess the image
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
+        
+        # Make prediction
+        with st.spinner("Classifying..."):
+            predictions = model.predict(img_array)
+            decoded_predictions = decode_predictions(predictions, top=5)[0]
+        
+        # Display results
+        st.subheader("Classification Results")
+        
+        # Create a table of results
+        results_data = {
+            "Class": [pred[1] for pred in decoded_predictions],
+            "Description": [pred[1].replace('_', ' ').title() for pred in decoded_predictions],
+            "Confidence": [f"{pred[2]*100:.2f}%" for pred in decoded_predictions]
+        }
+        
+        results_df = pd.DataFrame(results_data)
+        st.table(results_df)
+        
+        # Visualization of top prediction
+        top_pred = decoded_predictions[0]
+        st.subheader(f"Top Prediction: {top_pred[1].replace('_', ' ').title()}")
+        
+        # Show confidence bar for top prediction
+        st.progress(float(top_pred[2]))
+        
+    else:
+        st.error("Uploaded image must be RGB (3 channels). Please upload another image.")
 """
     }
     
     return templates.get(template_name, templates["blank"])
 
-
 def get_gradio_template(template_name):
     """Returns template code for Gradio apps"""
-    
     templates = {
-        "blank": """import gradio as gr
+        "blank": """
+import gradio as gr
 
-def hello_world(name):
+def greet(name):
     return f"Hello, {name}!"
-
-# Create a simple interface
-demo = gr.Interface(
-    fn=hello_world,
-    inputs=gr.Textbox(placeholder="Enter your name"),
-    outputs="text",
-    title="My Gradio App",
-    description="A simple Gradio application"
-)
-
-# Launch the app
-if __name__ == "__main__":
-    demo.launch()
-""",
-
-        "image_classifier": """import gradio as gr
-import numpy as np
-from PIL import Image
-
-# Placeholder function for image classification
-def classify_image(image):
-    # This would normally use a real ML model
-    # For demo purposes, we'll return random class probabilities
-    classes = ["cat", "dog", "bird", "fish", "other"]
-    probabilities = np.random.dirichlet(np.ones(len(classes)), size=1)[0]
-    
-    # Create a dictionary of class->probability
-    results = {classes[i]: float(probabilities[i]) for i in range(len(classes))}
-    
-    # Sort by probability (descending)
-    sorted_results = dict(sorted(results.items(), key=lambda x: x[1], reverse=True))
-    
-    return sorted_results
 
 # Create the Gradio interface
 demo = gr.Interface(
-    fn=classify_image,
-    inputs=gr.Image(type="pil"),
-    outputs=gr.Label(num_top_classes=3),
-    title="Image Classifier",
-    description="Upload an image to classify it into categories",
-    examples=[
-        ["https://storage.googleapis.com/gradio-static-files/img_sample1.jpg"],
-        ["https://storage.googleapis.com/gradio-static-files/img_sample2.jpg"],
-    ],
-    allow_flagging="never"
+    fn=greet,
+    inputs=gr.Textbox(label="Enter your name"),
+    outputs=gr.Textbox(label="Greeting"),
+    title="Simple Greeting App",
+    description="Enter your name to get a personalized greeting"
 )
 
 # Launch the app
 if __name__ == "__main__":
     demo.launch()
 """,
+        "image_classifier": """
+import gradio as gr
+import torch
+from torchvision import transforms
+from torchvision.models import resnet50
+from PIL import Image
 
-        "text_gen": """import gradio as gr
-import random
+# Load pre-trained model
+model = resnet50(pretrained=True)
+model.eval()
 
-# Mock text generation function
-def generate_text(prompt, max_length, temperature):
-    # In a real app, this would call a language model
-    # For demo, we'll generate placeholder text
+# ImageNet class labels
+LABELS_URL = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+import urllib.request
+with urllib.request.urlopen(LABELS_URL) as f:
+    LABELS = [line.decode("utf-8").strip() for line in f.readlines()]
+
+# Preprocessing transformation
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
+def predict(img):
+    # Preprocess the image
+    img_tensor = preprocess(Image.fromarray(img))
+    img_tensor = img_tensor.unsqueeze(0)  # Add batch dimension
     
-    # Sample text snippets to concatenate
-    sample_texts = [
-        "The quick brown fox jumps over the lazy dog.",
-        "All that glitters is not gold.",
-        "To be or not to be, that is the question.",
-        "In the beginning, there was code.",
-        "The future of AI remains to be written.",
-        "Gradio makes it easy to create interactive demos."
-    ]
+    # Make prediction
+    with torch.no_grad():
+        output = model(img_tensor)
+        probabilities = torch.nn.functional.softmax(output[0], dim=0)
     
-    # Generate "AI" text by repeating samples
-    output = prompt + " "
-    current_length = len(output.split())
+    # Get top 5 predictions
+    top5_prob, top5_idx = torch.topk(probabilities, 5)
     
-    while current_length < max_length:
-        # Higher temperature = more randomness
-        if random.random() < temperature:
-            # Add a completely random sentence
-            next_text = random.choice(sample_texts)
-        else:
-            # Add a more "coherent" follow-up
-            if "AI" in prompt or "artificial intelligence" in prompt.lower():
-                next_text = "The development of AI continues to accelerate at an unprecedented pace."
-            elif "data" in prompt.lower():
-                next_text = "Data analysis reveals patterns that might otherwise remain hidden."
-            elif "future" in prompt.lower():
-                next_text = "The future remains uncertain but full of possibilities."
-            else:
-                next_text = random.choice(sample_texts)
-                
-        output += " " + next_text
-        current_length = len(output.split())
+    # Format results
+    result = [(LABELS[idx], float(prob)) for prob, idx in zip(top5_prob, top5_idx)]
     
-    return output
+    return {label: prob for label, prob in result}
+
+# Create the Gradio interface
+demo = gr.Interface(
+    fn=predict,
+    inputs=gr.Image(),
+    outputs=gr.Label(num_top_classes=5),
+    title="Image Classifier",
+    description="ResNet50 model trained on ImageNet dataset",
+    examples=["example1.jpg", "example2.jpg"]
+)
+
+# Launch the app
+if __name__ == "__main__":
+    demo.launch()
+""",
+        "text_gen": """
+import gradio as gr
+import torch
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
+
+# Load pre-trained model and tokenizer
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+model = GPT2LMHeadModel.from_pretrained("gpt2")
+
+def generate_text(prompt, max_length=100, temperature=0.7):
+    # Encode the input text
+    input_ids = tokenizer.encode(prompt, return_tensors="pt")
+    
+    # Generate text
+    output = model.generate(
+        input_ids,
+        max_length=max_length,
+        temperature=temperature,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2,
+        do_sample=True,
+        top_p=0.92,
+        top_k=50
+    )
+    
+    # Decode the generated text
+    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    
+    return generated_text
 
 # Create the Gradio interface
 demo = gr.Interface(
     fn=generate_text,
     inputs=[
-        gr.Textbox(placeholder="Enter a prompt to start generating text", label="Prompt"),
-        gr.Slider(minimum=10, maximum=100, value=30, step=5, label="Max Length (words)"),
+        gr.Textbox(label="Prompt", placeholder="Enter your prompt here..."),
+        gr.Slider(minimum=10, maximum=500, value=100, step=10, label="Max Length"),
         gr.Slider(minimum=0.1, maximum=1.0, value=0.7, step=0.1, label="Temperature")
     ],
     outputs=gr.Textbox(label="Generated Text"),
-    title="Text Generation Demo",
-    description="Generate text based on a prompt with adjustable parameters",
-    examples=[
-        ["The future of AI is", 50, 0.7],
-        ["Once upon a time in a land far away", 75, 0.9],
-        ["Data analysis shows that", 40, 0.5]
-    ]
+    title="Text Generation with GPT-2",
+    description="Generate text using OpenAI's GPT-2 model"
 )
 
 # Launch the app
 if __name__ == "__main__":
     demo.launch()
 """,
-
-        "audio": """import gradio as gr
+        "audio": """
+import gradio as gr
 import numpy as np
-import random
-import string
+import librosa
+import matplotlib.pyplot as plt
+import io
+from PIL import Image
 
-# Mock transcription function (would normally use a speech recognition model)
-def transcribe_audio(audio):
-    # In a real app, this would use a speech recognition model
-    # For this demo, we'll return a placeholder transcription
+def process_audio(audio):
+    # Extract the sample rate and audio data
+    sample_rate, data = audio
     
-    if audio is None:
-        return "No audio detected. Please record or upload audio."
+    # Convert to mono if stereo
+    if len(data.shape) > 1:
+        data = np.mean(data, axis=1)
     
-    # Get audio duration in seconds
-    duration = len(audio[1]) / audio[0]
+    # Generate visualizations
+    results = {}
     
-    # Generate random "transcription" based on audio length
-    word_count = int(duration * 2)  # Assume 2 words per second
+    # 1. Waveform
+    plt.figure(figsize=(10, 4))
+    plt.plot(np.linspace(0, len(data) / sample_rate, len(data)), data)
+    plt.title('Waveform')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.tight_layout()
     
-    # List of common words for more realistic output
-    common_words = [
-        "the", "be", "to", "of", "and", "a", "in", "that", "have", "I",
-        "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
-        "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
-        "or", "an", "will", "my", "one", "all", "would", "there", "their", "what"
-    ]
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    results["waveform"] = Image.open(buf)
+    plt.close()
     
-    # Generate sentence-like structure
-    words = []
+    # 2. Spectrogram
+    D = librosa.amplitude_to_db(np.abs(librosa.stft(data)), ref=np.max)
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(D, sr=sample_rate, x_axis='time', y_axis='log')
+    plt.colorbar(format='%+2.0f dB')
+    plt.title('Spectrogram')
+    plt.tight_layout()
     
-    # Add some sentences
-    sentences = max(1, int(word_count / 8))
-    for i in range(sentences):
-        sentence_length = random.randint(4, 10)
-        
-        # Start with capital letter
-        sentence = [random.choice(common_words).capitalize()]
-        
-        # Add more words
-        sentence.extend(random.choices(common_words, k=sentence_length-1))
-        
-        # Join and add period
-        sentence_str = " ".join(sentence) + "."
-        words.append(sentence_str)
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    results["spectrogram"] = Image.open(buf)
+    plt.close()
     
-    transcription = " ".join(words)
+    # 3. MFCCs (Mel-frequency cepstral coefficients)
+    mfccs = librosa.feature.mfcc(y=data, sr=sample_rate, n_mfcc=13)
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(mfccs, sr=sample_rate, x_axis='time')
+    plt.colorbar()
+    plt.title('MFCC')
+    plt.tight_layout()
     
-    return transcription
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    results["mfcc"] = Image.open(buf)
+    plt.close()
+    
+    # Audio features
+    features = {
+        "Duration (s)": len(data) / sample_rate,
+        "Sample Rate": sample_rate,
+        "Max Amplitude": np.max(np.abs(data)),
+        "Min Amplitude": np.min(np.abs(data)),
+        "Mean": np.mean(data),
+        "Standard Deviation": np.std(data)
+    }
+    
+    return results["waveform"], results["spectrogram"], results["mfcc"], features
 
 # Create the Gradio interface
 demo = gr.Interface(
-    fn=transcribe_audio,
-    inputs=gr.Audio(source="microphone", type="numpy"),
-    outputs=gr.Textbox(label="Transcription"),
-    title="Audio Transcription Demo",
-    description="Record or upload audio to transcribe it into text",
-    examples=[
-        ["https://storage.googleapis.com/gradio-static-files/sample_audio1.wav"],
-        ["https://storage.googleapis.com/gradio-static-files/sample_audio2.wav"]
-    ]
+    fn=process_audio,
+    inputs=gr.Audio(),
+    outputs=[
+        gr.Image(label="Waveform"),
+        gr.Image(label="Spectrogram"),
+        gr.Image(label="MFCC"),
+        gr.JSON(label="Audio Features")
+    ],
+    title="Audio Analysis Tool",
+    description="Upload an audio file to analyze its waveform, spectrogram, and MFCCs",
+    examples=[["example1.wav"], ["example2.mp3"]]
 )
 
 # Launch the app
 if __name__ == "__main__":
     demo.launch()
 """,
-
-        "chat": """import gradio as gr
+        "chat": """
+import gradio as gr
 import random
 import time
 
-# Sample responses for different topics
-responses = {
-    "greeting": [
-        "Hello! How can I help you today?",
-        "Hi there! What can I assist you with?",
-        "Greetings! How may I be of service?"
-    ],
-    "weather": [
-        "The weather forecast indicates mild temperatures with a chance of rain.",
-        "It's looking sunny with clear skies today!",
-        "Expect cloudy conditions with occasional showers."
-    ],
-    "help": [
-        "I can assist with various queries. Just ask me anything!",
-        "I'm here to help! What information are you looking for?",
-        "You can ask me about various topics, and I'll do my best to assist."
-    ],
-    "default": [
-        "That's an interesting question. Let me think about it.",
-        "I understand what you're asking. Here's what I can tell you...",
-        "Thank you for your question. From my knowledge..."
-    ]
-}
-
-# Chat function
+# Simple chatbot response function
 def chatbot(message, history):
-    # Simulate thinking time
-    time.sleep(0.5)
+    # Simulate typing delay
+    time.sleep(random.uniform(0.5, 1.5))
     
-    # Convert message to lowercase for easier matching
-    message_lower = message.lower()
+    # Simple response logic
+    message = message.lower()
     
-    # Check for greetings
-    if any(word in message_lower for word in ["hello", "hi", "hey", "greetings"]):
-        response = random.choice(responses["greeting"])
+    if "hello" in message or "hi" in message:
+        return "Hello there! How can I help you today?"
     
-    # Check for weather queries
-    elif any(word in message_lower for word in ["weather", "forecast", "temperature", "rain"]):
-        response = random.choice(responses["weather"])
+    elif "how are you" in message:
+        return "I'm just a computer program, but I'm functioning well! How about you?"
     
-    # Check for help requests
-    elif any(word in message_lower for word in ["help", "assist", "support"]):
-        response = random.choice(responses["help"])
+    elif "bye" in message or "goodbye" in message:
+        return "Goodbye! Have a great day!"
     
-    # Default response for other queries
+    elif "thank" in message:
+        return "You're welcome! Is there anything else I can help with?"
+    
+    elif "help" in message:
+        return "I can assist with answering questions, providing information, or just chatting. What would you like to know?"
+    
+    elif "what" in message and "your name" in message:
+        return "I'm a friendly AI assistant created using Gradio. You can call me Chatbot!"
+    
+    elif "weather" in message:
+        return "I don't have access to real-time weather data. You might want to check a weather service for that information!"
+    
+    elif "joke" in message:
+        jokes = [
+            "Why did the scarecrow win an award? Because he was outstanding in his field!",
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "What do you call a bear with no teeth? A gummy bear!",
+            "Why did the bicycle fall over? Because it was two-tired!",
+            "How does a penguin build its house? Igloos it together!"
+        ]
+        return random.choice(jokes)
+    
     else:
-        response = random.choice(responses["default"])
-        
-        # Add a more specific comment based on keywords
-        if "how" in message_lower:
-            response += " The process typically involves several steps..."
-        elif "why" in message_lower:
-            response += " There are multiple factors that contribute to this..."
-        elif "when" in message_lower:
-            response += " The timing depends on various circumstances..."
-        elif "where" in message_lower:
-            response += " The location varies depending on context..."
-    
-    return response
+        responses = [
+            "Interesting point. Could you tell me more about that?",
+            "I'm not sure I fully understand. Could you explain differently?",
+            "That's something I'd like to learn more about.",
+            "Thanks for sharing that with me.",
+            "Let me think about that for a moment..."
+        ]
+        return random.choice(responses)
 
-# Create the Gradio interface
+# Create the Gradio chat interface
 demo = gr.ChatInterface(
     fn=chatbot,
-    title="Interactive Chat Demo",
-    description="Ask any question or just have a conversation",
-    examples=[
-        "Hello there!",
-        "What's the weather like today?",
-        "Can you help me find information?",
-        "How does this process work?",
-        "Why is the sky blue?"
-    ],
-    theme="soft"
+    title="Simple AI Chatbot",
+    description="Ask me anything, and I'll do my best to respond!",
+    examples=["Hello there!", "How are you today?", "Tell me a joke", "What's your name?"],
+    retry_btn=None,
+    undo_btn=None,
+    clear_btn="Clear chat"
 )
 
 # Launch the app

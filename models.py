@@ -6,7 +6,7 @@ import app_templates
 
 # Initialize Gemini
 try:
-    genai.configure(api_key=os.getenv("GOOGLE_API_KEY", "your-api-key"))
+    genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 except Exception as e:
     print(f"Error initializing Gemini: {str(e)}")
 
@@ -17,6 +17,7 @@ _t0_model = None
 _t0_tokenizer = None
 
 def get_codet5_model():
+    """Load CodeT5 model and tokenizer"""
     global _codet5_model, _codet5_tokenizer
     if _codet5_model is None:
         try:
@@ -24,11 +25,11 @@ def get_codet5_model():
             _codet5_model = AutoModelForSeq2SeqLM.from_pretrained("Salesforce/codet5-small")
         except Exception as e:
             print(f"Error loading CodeT5 model: {str(e)}")
-            # Fallback message
             return None, None
     return _codet5_model, _codet5_tokenizer
 
 def get_t0_model():
+    """Load T0_3B model and tokenizer"""
     global _t0_model, _t0_tokenizer
     if _t0_model is None:
         try:
@@ -36,12 +37,11 @@ def get_t0_model():
             _t0_model = AutoModelForSeq2SeqLM.from_pretrained("bigscience/T0_3B")
         except Exception as e:
             print(f"Error loading T0 model: {str(e)}")
-            # Fallback message
             return None, None
     return _t0_model, _t0_tokenizer
 
 def generate_with_gemini(prompt, app_type, template_name):
-    """Generate code using Gemini Pro 2.0"""
+    """Generate code using Gemini Pro model"""
     try:
         # Get template for context
         template = ""
@@ -99,14 +99,27 @@ def generate_with_gemini(prompt, app_type, template_name):
     
     except Exception as e:
         print(f"Error in Gemini generation: {str(e)}")
-        return f"# Error generating code with Gemini: {str(e)}\n\n# Please try again or use a different model."
+        # Return a fallback template with error info
+        if app_type == "streamlit":
+            template = app_templates.get_streamlit_template(template_name)
+        else:
+            template = app_templates.get_gradio_template(template_name)
+            
+        return f"""# Error generating code with Gemini: {str(e)}
+# Using template as fallback
+
+{template}
+
+# TODO: Implement the following functionality based on the prompt:
+# {prompt}
+"""
 
 def generate_with_codet5(prompt, app_type, template_name):
     """Generate code using CodeT5-small model"""
     try:
         model, tokenizer = get_codet5_model()
         if model is None or tokenizer is None:
-            return "# Error: CodeT5 model could not be loaded.\n# Please try using a different model."
+            return fallback_generation(app_type, template_name, prompt, "CodeT5 model could not be loaded")
         
         # Get template for context
         template = ""
@@ -136,27 +149,22 @@ def generate_with_codet5(prompt, app_type, template_name):
         
         # CodeT5 might generate incomplete code, so provide fallback
         if len(code.strip()) < 50 or "import" not in code:
-            # Return modified template instead
-            if app_type == "streamlit":
-                return adapt_template(app_templates.get_streamlit_template(template_name), prompt)
-            else:
-                return adapt_template(app_templates.get_gradio_template(template_name), prompt)
+            return adapt_template(template, prompt)
         
         return code
     
     except Exception as e:
         print(f"Error in CodeT5 generation: {str(e)}")
-        return f"# Error generating code with CodeT5: {str(e)}\n\n# Please try again or use a different model."
+        return fallback_generation(app_type, template_name, prompt, str(e))
 
 def generate_with_t0(prompt, app_type, template_name):
     """Generate code using T0_3B model"""
     try:
         model, tokenizer = get_t0_model()
         if model is None or tokenizer is None:
-            return "# Error: T0 model could not be loaded.\n# Please try using a different model."
+            return fallback_generation(app_type, template_name, prompt, "T0 model could not be loaded")
         
-        # Get template for context since T0 is not specialized for code
-        template = ""
+        # Get template since T0 is not specialized for code
         if app_type == "streamlit":
             template = app_templates.get_streamlit_template(template_name)
         else:
@@ -164,12 +172,27 @@ def generate_with_t0(prompt, app_type, template_name):
         
         # T0 isn't specialized for code, so we'll adapt a template
         # based on the user's prompt
-        adapted_template = adapt_template(template, prompt)
-        return adapted_template
+        return adapt_template(template, prompt)
     
     except Exception as e:
         print(f"Error in T0 generation: {str(e)}")
-        return f"# Error generating code with T0: {str(e)}\n\n# Please try again or use a different model."
+        return fallback_generation(app_type, template_name, prompt, str(e))
+
+def fallback_generation(app_type, template_name, prompt, error_message):
+    """Generate fallback code when model generation fails"""
+    if app_type == "streamlit":
+        template = app_templates.get_streamlit_template(template_name)
+    else:
+        template = app_templates.get_gradio_template(template_name)
+        
+    return f"""# Error in code generation: {error_message}
+# Using template as fallback
+
+{template}
+
+# TODO: Implement the following functionality based on the prompt:
+# {prompt}
+"""
 
 def adapt_template(template, prompt):
     """Adapts a template based on the user's prompt"""
@@ -179,12 +202,19 @@ def adapt_template(template, prompt):
     # Basic adaptation - change comments and app title
     adapted_code = template
     
-    # Replace app title
+    # Replace app title if it exists in the template
     title_match = re.search(r'st\.title\(["\'](.+?)["\']\)', template)
-    if title_match and app_type == "streamlit":
+    if title_match:
         original_title = title_match.group(1)
         new_title = generate_title_from_prompt(prompt)
         adapted_code = adapted_code.replace(f'st.title("{original_title}")', f'st.title("{new_title}")')
+    
+    # Gradio title replacement
+    title_match = re.search(r'title="(.+?)"', template)
+    if title_match:
+        original_title = title_match.group(1)
+        new_title = generate_title_from_prompt(prompt)
+        adapted_code = adapted_code.replace(f'title="{original_title}"', f'title="{new_title}"')
     
     # Add a comment about the purpose based on the prompt
     header_comment = f"# App generated for: {prompt}\n"
