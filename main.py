@@ -55,16 +55,19 @@ with st.sidebar:
     st.header("Configuration")
 
     # Theme toggle
-    def toggle_theme():
+    if "theme_changed" not in st.session_state:
+        st.session_state.theme_changed = False
+        
+    theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
+    theme_text = f"{theme_icon} Switch to {'Dark' if st.session_state.theme == 'light' else 'Light'} Mode"
+    
+    if st.button(theme_text):
         if st.session_state.theme == "light":
             st.session_state.theme = "dark"
         else:
             st.session_state.theme = "light"
+        st.session_state.theme_changed = True
         st.rerun()
-
-    theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
-    theme_text = f"{theme_icon} Switch to {'Dark' if st.session_state.theme == 'light' else 'Light'} Mode"
-    st.button(theme_text, on_click=toggle_theme)
 
     # Apply theme-specific styles through HTML
     if st.session_state.theme == "dark":
