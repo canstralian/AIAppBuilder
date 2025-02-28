@@ -13,6 +13,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialize theme in session state if not present
+if 'theme' not in st.session_state:
+    # Default to light theme
+    st.session_state.theme = "light"
+
 # Custom CSS
 with open('assets/custom.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -40,7 +45,78 @@ st.markdown("Generate AI-powered Streamlit and Gradio applications using multipl
 # Sidebar
 with st.sidebar:
     st.header("Configuration")
-
+    
+    # Theme toggle
+    def toggle_theme():
+        if st.session_state.theme == "light":
+            st.session_state.theme = "dark"
+        else:
+            st.session_state.theme = "light"
+        st.rerun()
+        
+    theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
+    theme_text = f"{theme_icon} Switch to {'Dark' if st.session_state.theme == 'light' else 'Light'} Mode"
+    st.button(theme_text, on_click=toggle_theme)
+    
+    # Apply theme-specific styles through HTML
+    if st.session_state.theme == "dark":
+        st.markdown("""
+        <style>
+        :root {
+            --primary-color: #BB86FC;
+            --secondary-color: #03DAC6;
+            --background-color: #121212;
+            --text-color: #E0E0E0;
+            --accent-color: #808495;
+            --light-accent-color: #2C2C35;
+            --dark-accent-color: #424255;
+            --success-color: #0CCE6B;
+            --error-color: #CF6679;
+            --warning-color: #FFC107;
+            --info-color: #2196F3;
+        }
+        
+        /* Dark theme overrides */
+        .main {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        
+        .stTextInput, .stTextArea, .stSelectbox {
+            background-color: #1E1E1E;
+            color: white;
+        }
+        
+        .stButton>button {
+            color: white;
+        }
+        
+        .stMarkdown {
+            color: var(--text-color);
+        }
+        
+        .css-1r6slb0, .css-1fv8s86 {  /* Sidebar background */
+            background-color: #1E1E1E;
+        }
+        
+        .stCodeBlock>div {
+            background-color: #2D2D2D;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-color);
+        }
+        
+        .stExpander {
+            border-color: #2D2D2D;
+        }
+        
+        a {
+            color: var(--secondary-color);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
     # API Key input (if needed)
     if not has_gemini_api_key:
         st.warning("⚠️ Gemini API Key not found")

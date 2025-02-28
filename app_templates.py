@@ -418,10 +418,11 @@ if uploaded_file is not None:
         
     else:
         st.error("Uploaded image must be RGB (3 channels). Please upload another image.")
-"""
+""",
     }
-    
+
     return templates.get(template_name, templates["blank"])
+
 
 def get_gradio_template(template_name):
     """Returns template code for Gradio apps"""
@@ -709,7 +710,7 @@ demo = gr.ChatInterface(
 # Launch the app
 if __name__ == "__main__":
     demo.launch()
-"""
+""",
     }
-    
+
     return templates.get(template_name, templates["blank"])
