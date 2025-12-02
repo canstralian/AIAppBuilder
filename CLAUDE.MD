@@ -34,7 +34,7 @@ This is an AI Application Generator built with Streamlit that enables users to a
 
 - **Frontend**: Streamlit
 - **AI Models**:
-  - Google Gemini Pro 2.0 (via google-generativeai)
+  - Google Gemini Pro 2.0 (identifier: `gemini_pro_20`, via google-generativeai)
   - CodeT5 (via transformers)
   - T0_3B (via transformers)
 - **ML Framework**: PyTorch
