@@ -144,9 +144,13 @@ Users can choose from three different models, each with different characteristic
 
 The app uses `st.session_state` for:
 - `theme`: Current theme ('light' or 'dark')
-- Generated code storage
-- Model selection
-- Template selection
+- `generated_code`: Generated code storage
+- `app_type`: Application type selection
+- `model_name`: Model selection
+- `template_name`: Template selection
+- `user_prompt`: User's text input
+- `prompt_history`: History of prompts
+- `theme_changed`: Flag to manage theme updates
 
 ## API Keys and Configuration
 
