@@ -114,7 +114,7 @@ pylint main.py models.py app_templates.py utils.py
 
 ### AI Model Selection
 Users can choose from three different models, each with different characteristics:
-- **Gemini Pro 2.0**: Most capable, requires API key
+- **Gemini Pro 2.0** (model identifier: "gemini-pro"): Most capable, requires API key
 - **CodeT5**: Specialized for code generation
 - **T0_3B**: General-purpose text-to-text model
 
