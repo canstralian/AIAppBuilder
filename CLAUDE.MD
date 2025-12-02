@@ -47,19 +47,20 @@ This is an AI Application Generator built with Streamlit that enables users to a
 ```
 AIAppBuilder/
 ├── main.py                 # Main Streamlit application
-├── models.py              # AI model implementations
-├── app_templates.py       # Template definitions
-├── utils.py               # Utility functions
-├── requirements.txt       # Python dependencies
-├── README.md             # User-facing documentation
-├── CLAUDE.MD             # This file - AI assistant guide
-├── CONTRIBUTING.md       # Contribution guidelines
-├── CODE_OF_CONDUCT.md    # Community guidelines
-├── generated-icon.png    # Project icon
+├── models.py               # AI model implementations
+├── app_templates.py        # Template definitions
+├── utils.py                # Utility functions
+├── assets/
+│   └── custom.css          # Custom CSS for styling
+├── requirements.txt        # Python dependencies
+├── README.md               # User-facing documentation
+├── CLAUDE.MD               # This file - AI assistant guide
+├── CONTRIBUTING.md         # Contribution guidelines
+├── CODE_OF_CONDUCT.md      # Community guidelines
+├── generated-icon.png      # Project icon
 └── .github/
     └── workflows/
-        └── pylint.yml    # GitHub Actions for linting
-
+        └── pylint.yml      # GitHub Actions for linting
 ```
 
 ## Development Guidelines
