@@ -194,7 +194,6 @@ The app uses `st.session_state` for:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ## Recent Changes
 
