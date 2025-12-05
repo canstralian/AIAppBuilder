@@ -21,4 +21,4 @@ jobs:
         pip install pylint
     - name: Analyzing the code with pylint
       run: |
-        pylint --disable=C0111,C0103,C0303,E0401,W0611,W0612,W0613,W0603,W1514,R0903 --max-line-length=120 --exit-zero $(git ls-files '*.py')
+        pylint --disable=C0111,C0103,C0303,E0401,W0603,W1514,R0903 --max-line-length=120 --exit-zero $(git ls-files '*.py')
