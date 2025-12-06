@@ -152,7 +152,7 @@ The app uses `st.session_state` for:
 
 ## API Keys and Configuration
 
-- **GOOGLE_API_KEY**: Required for Google Gemini Pro (gemini-pro model)
+- **GOOGLE_API_KEY**: Required for Google Gemini Pro (API model: "gemini-pro")
   - Can be set as environment variable
   - Can be entered in UI sidebar
   - Falls back to manual input if not set
