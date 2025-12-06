@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is an AI Application Generator built with Streamlit that enables users to automatically generate Streamlit and Gradio application code using multiple AI models (Gemini Pro 2.0, CodeT5, and T0_3B). The tool provides template selection, code validation, formatting, and export capabilities.
+This is an AI Application Generator built with Streamlit that enables users to automatically generate Streamlit and Gradio application code using multiple AI models (Google Gemini Pro, CodeT5, and T0_3B). The tool provides template selection, code validation, formatting, and export capabilities.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ This is an AI Application Generator built with Streamlit that enables users to a
    - Code generation orchestration
 
 2. **models.py** - AI model implementations
-   - Gemini Pro 2.0 integration (Google Generative AI)
+   - Google Gemini Pro integration (using "gemini-pro" model via Google Generative AI API)
    - CodeT5 integration (Hugging Face Transformers)
    - T0_3B integration (Hugging Face Transformers)
    - Model initialization and caching
@@ -34,7 +34,7 @@ This is an AI Application Generator built with Streamlit that enables users to a
 
 - **Frontend**: Streamlit
 - **AI Models**:
-  - Google Gemini Pro 2.0 (identifier: `gemini_pro_20`, via google-generativeai)
+  - Google Gemini Pro (API model: "gemini-pro", via google-generativeai)
   - CodeT5 (via transformers)
   - T0_3B (via transformers)
 - **ML Framework**: PyTorch
@@ -55,8 +55,6 @@ AIAppBuilder/
 ├── requirements.txt        # Python dependencies
 ├── README.md               # User-facing documentation
 ├── CLAUDE.MD               # This file - AI assistant guide
-├── CONTRIBUTING.md         # Contribution guidelines
-├── CODE_OF_CONDUCT.md      # Community guidelines
 ├── generated-icon.png      # Project icon
 └── .github/
     └── workflows/
@@ -114,7 +112,7 @@ pylint main.py models.py app_templates.py utils.py
 
 ### AI Model Selection
 Users can choose from three different models, each with different characteristics:
-- **Gemini Pro 2.0** (model identifier: "gemini-pro"): Most capable, requires API key
+- **Google Gemini Pro** (API model: "gemini-pro", displayed as "Gemini Pro 2.0" in UI): Most capable, requires API key
 - **CodeT5**: Specialized for code generation
 - **T0_3B**: General-purpose text-to-text model
 
@@ -154,7 +152,7 @@ The app uses `st.session_state` for:
 
 ## API Keys and Configuration
 
-- **GOOGLE_API_KEY**: Required for Gemini Pro 2.0
+- **GOOGLE_API_KEY**: Required for Google Gemini Pro (API model: "gemini-pro")
   - Can be set as environment variable
   - Can be entered in UI sidebar
   - Falls back to manual input if not set
@@ -194,7 +192,7 @@ The app uses `st.session_state` for:
 
 ## Contributing
 
-
+Please refer to the project's GitHub repository for contribution guidelines.
 ## Recent Changes
 
 - Added GitHub Actions workflow for Pylint
