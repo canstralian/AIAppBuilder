@@ -92,11 +92,11 @@ streamlit run main.py
 
 ## 👥 Contributing
 
-Contributions are welcome! Please check out our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get started.
+Contributions are welcome! Please visit our [GitHub Repository](https://github.com/canstralian/AIAppBuilder) to open issues, submit pull requests, or discuss improvements.
 
 ## 📜 Code of Conduct
 
-Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to understand our community expectations.
+We expect all contributors to be respectful and collaborative. Please follow standard open-source community guidelines when interacting with this project.
 
 ## ⚖️ License
 
