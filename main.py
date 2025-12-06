@@ -1,5 +1,12 @@
-import streamlit as st
+"""
+AI Application Generator - Main Streamlit Application
+Generates Streamlit and Gradio applications using multiple AI models.
+"""
 import os
+import random
+
+import streamlit as st
+
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
 from utils import (
@@ -9,7 +16,6 @@ from utils import (
     get_app_type_info,
     get_model_info,
 )
-import random
 
 # Set page configuration
 st.set_page_config(
@@ -25,7 +31,7 @@ if "theme" not in st.session_state:
     st.session_state.theme = "light"
 
 # Custom CSS
-with open("assets/custom.css") as f:
+with open("assets/custom.css", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # Check for API key
@@ -57,10 +63,11 @@ with st.sidebar:
     # Theme toggle
     if "theme_changed" not in st.session_state:
         st.session_state.theme_changed = False
-        
+
     theme_icon = "🌙" if st.session_state.theme == "light" else "☀️"
-    theme_text = f"{theme_icon} Switch to {'Dark' if st.session_state.theme == 'light' else 'Light'} Mode"
-    
+    dark_or_light = 'Dark' if st.session_state.theme == 'light' else 'Light'
+    theme_text = f"{theme_icon} Switch to {dark_or_light} Mode"
+
     if st.button(theme_text):
         if st.session_state.theme == "light":
             st.session_state.theme = "dark"
@@ -277,19 +284,28 @@ with col1:
     st.header("Generate Application")
 
     # User input
+    placeholder_text = (
+        "Example: Create a data visualization app that allows users to "
+        "upload a CSV file and visualize the data using different chart "
+        "types like bar charts, line charts, and scatter plots."
+    )
     user_prompt = st.text_area(
         "Describe your application in detail",
         height=150,
-        placeholder="Example: Create a data visualization app that allows users to upload a CSV file and visualize the data using different chart types like bar charts, line charts, and scatter plots.",
+        placeholder=placeholder_text,
     )
 
     # Examples accordion
     with st.expander("Need inspiration? Try these examples"):
         example_prompts = [
-            "A simple image classifier that can identify dogs, cats, and birds using a pre-trained model.",
-            "A sentiment analysis app that analyzes the sentiment of user-entered text and provides a positive, negative, or neutral rating.",
-            "A data dashboard that visualizes COVID-19 statistics with interactive maps and charts.",
-            "A file converter app that allows users to upload images and convert them to different formats.",
+            ("A simple image classifier that can identify dogs, cats, and birds "
+             "using a pre-trained model."),
+            ("A sentiment analysis app that analyzes the sentiment of user-entered "
+             "text and provides a positive, negative, or neutral rating."),
+            ("A data dashboard that visualizes COVID-19 statistics with interactive "
+             "maps and charts."),
+            ("A file converter app that allows users to upload images and convert "
+             "them to different formats."),
         ]
 
         for i, example in enumerate(example_prompts):
@@ -351,7 +367,7 @@ with col1:
                 # Success message
                 st.success("App generated successfully!")
 
-            except Exception as e:
+            except (RuntimeError, ValueError, ImportError) as e:
                 st.error(f"Error generating code: {str(e)}")
                 st.session_state.generated_code = "# Error occurred during generation"
 
@@ -433,7 +449,7 @@ with col2:
                         f"Regenerated with {new_model.replace('_', ' ').title()} model"
                     )
 
-                except Exception as e:
+                except (RuntimeError, ValueError, ImportError) as e:
                     st.error(f"Error regenerating code: {str(e)}")
     else:
         st.info(
@@ -456,9 +472,13 @@ st.markdown(
     """
     <div style="text-align: center;">
         <p>Built with ❤️ using Streamlit and multiple AI models</p>
-        <p>Inspired by Hugging Face Spaces like <a href="https://huggingface.co/spaces/deepseek-ai/deepseek-coder-33b-instruct">Deepseek Coder</a>, 
-        <a href="https://huggingface.co/spaces/codellama/codellama-playground">CodeLlama Playground</a>, and 
-        <a href="https://huggingface.co/spaces/whackthejacker/ai-python-code-reviewer">AI Python Code Reviewer</a></p>
+        <p>Inspired by Hugging Face Spaces like
+        <a href="https://huggingface.co/spaces/deepseek-ai/deepseek-coder-33b-instruct">
+        Deepseek Coder</a>,
+        <a href="https://huggingface.co/spaces/codellama/codellama-playground">
+        CodeLlama Playground</a>, and
+        <a href="https://huggingface.co/spaces/whackthejacker/ai-python-code-reviewer">
+        AI Python Code Reviewer</a></p>
     </div>
     """,
     unsafe_allow_html=True,

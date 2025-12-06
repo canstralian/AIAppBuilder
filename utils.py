@@ -1,4 +1,7 @@
-import streamlit as st
+"""
+Utility functions for code formatting, validation, and export.
+Provides helper functions for the AI App Generator.
+"""
 import ast
 import base64
 
@@ -17,11 +20,12 @@ def format_code(code):
         # Code is valid, no need for complex formatting at this stage
         return code
     except SyntaxError as e:
-        # If there's a syntax error, attempt basic cleanup
-        lines = code.split('\n')
-        # Try to identify and fix common syntax issues
-        # For now, just return the code with a comment about the error
-        return f"# Note: The generated code has a syntax error that may need fixing:\n# {str(e)}\n\n{code}"
+        # If there's a syntax error, return the code with a comment about the error
+        error_comment = (
+            f"# Note: The generated code has a syntax error that may need fixing:\n"
+            f"# {str(e)}\n\n{code}"
+        )
+        return error_comment
 
 def validate_code(code):
     """Validate if the code has proper syntax.
@@ -30,7 +34,8 @@ def validate_code(code):
         code (str): The code to validate.
 
     Returns:
-        tuple: A tuple containing a boolean indicating whether the code is valid and an error message (if any).
+        tuple: A tuple containing a boolean indicating whether the code is valid
+            and an error message (if any).
     """
     try:
         ast.parse(code)
@@ -39,8 +44,6 @@ def validate_code(code):
         line_number = e.lineno
         error_message = str(e)
         return False, f"Syntax error at line {line_number}: {error_message}"
-    except Exception as e:
-        return False, f"Error validating code: {str(e)}"
 
 def export_code(code, filename="app.py"):
     """Create a download link for the code file.
@@ -53,7 +56,10 @@ def export_code(code, filename="app.py"):
         str: HTML code for a download link.
     """
     b64 = base64.b64encode(code.encode()).decode()
-    href = f'<a href="data:file/text;base64,{b64}" download="{filename}" class="download-btn">💾 Download {filename}</a>'
+    href = (
+        f'<a href="data:file/text;base64,{b64}" download="{filename}" '
+        f'class="download-btn">💾 Download {filename}</a>'
+    )
     return href
 
 def get_app_type_info(app_type):
@@ -121,7 +127,8 @@ def get_model_info(model_name):
 
 **Provider:** Google
 
-**Description:** Google's powerful large language model with advanced code generation capabilities.
+**Description:** Google's powerful large language model with advanced code
+generation capabilities.
 
 **Strengths:**
 - High-quality code generation
@@ -139,7 +146,8 @@ def get_model_info(model_name):
 
 **Provider:** Salesforce
 
-**Description:** Specialized code generation model fine-tuned specifically for programming tasks.
+**Description:** Specialized code generation model fine-tuned specifically for
+programming tasks.
 
 **Strengths:**
 - Focused on code generation
@@ -157,7 +165,8 @@ def get_model_info(model_name):
 
 **Provider:** BigScience
 
-**Description:** A 3 billion parameter language model trained on diverse datasets with zero-shot capabilities.
+**Description:** A 3 billion parameter language model trained on diverse datasets
+with zero-shot capabilities.
 
 **Strengths:**
 - General-purpose capabilities

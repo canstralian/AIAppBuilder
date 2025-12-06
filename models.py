@@ -18,14 +18,14 @@ except RuntimeError as e:
         # Create dummy classes to prevent errors
         class DummyAutoModel:
             @classmethod
-            def from_pretrained(cls, *args, **kwargs):
+            def from_pretrained(cls, *_args, **_kwargs):
                 return None
-        
+
         class DummyAutoTokenizer:
             @classmethod
-            def from_pretrained(cls, *args, **kwargs):
+            def from_pretrained(cls, *_args, **_kwargs):
                 return None
-                
+
         AutoModelForSeq2SeqLM = DummyAutoModel
         AutoTokenizer = DummyAutoTokenizer
     else:
@@ -45,7 +45,7 @@ def initialize_gemini():
         try:
             genai.configure(api_key=api_key)
             return True
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             print(f"Error initializing Gemini: {str(e)}")
             return False
     return False
@@ -63,10 +63,11 @@ _T0_TOKENIZER = None
 
 def get_codet5_model():
     """Load CodeT5 model and tokenizer.
-    
+
     Returns:
         tuple: (model, tokenizer) or (None, None) if loading fails
     """
+    # pylint: disable=global-statement
     global _CODET5_MODEL, _CODET5_TOKENIZER
     if _CODET5_MODEL is None:
         try:
@@ -74,43 +75,26 @@ def get_codet5_model():
             _CODET5_MODEL = AutoModelForSeq2SeqLM.from_pretrained(
                 "Salesforce/codet5-small"
             )
-        except RuntimeError as e:
+        except (RuntimeError, ValueError, ImportError) as e:
             print(f"Error loading CodeT5 model: {str(e)}")
-            return None, None
-        except ValueError as e:
-            print(f"Value error loading CodeT5 model: {str(e)}")
-            return None, None
-        except ImportError as e:
-            print(f"Import error loading CodeT5 model: {str(e)}")
-            return None, None
-        except Exception as e:
-            print(f"Unexpected error loading CodeT5 model: {str(e)}")
             return None, None
     return _CODET5_MODEL, _CODET5_TOKENIZER
 
 
 def get_t0_model():
     """Load T0_3B model and tokenizer.
-    
+
     Returns:
         tuple: (model, tokenizer) or (None, None) if loading fails
     """
+    # pylint: disable=global-statement
     global _T0_MODEL, _T0_TOKENIZER
     if _T0_MODEL is None:
         try:
             _T0_TOKENIZER = AutoTokenizer.from_pretrained("bigscience/T0_3B")
             _T0_MODEL = AutoModelForSeq2SeqLM.from_pretrained("bigscience/T0_3B")
-        except RuntimeError as e:
+        except (RuntimeError, ValueError, ImportError) as e:
             print(f"Error loading T0 model: {str(e)}")
-            return None, None
-        except ValueError as e:
-            print(f"Value error loading T0 model: {str(e)}")
-            return None, None
-        except ImportError as e:
-            print(f"Import error loading T0 model: {str(e)}")
-            return None, None
-        except Exception as e:
-            print(f"Unexpected error loading T0 model: {str(e)}")
             return None, None
     return _T0_MODEL, _T0_TOKENIZER
 
@@ -190,13 +174,7 @@ def generate_with_gemini(prompt, app_type, template_name):
 
         return generated_code
 
-    except RuntimeError as e:
-        print(f"Runtime error in Gemini generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except ValueError as e:
-        print(f"Value error in Gemini generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except Exception as e:
+    except (RuntimeError, ValueError, ImportError) as e:
         print(f"Error in Gemini generation: {str(e)}")
         return fallback_generation(app_type, template_name, prompt, str(e))
 
@@ -253,13 +231,7 @@ def generate_with_codet5(prompt, app_type, template_name):
 
         return code
 
-    except RuntimeError as e:
-        print(f"Runtime error in CodeT5 generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except ValueError as e:
-        print(f"Value error in CodeT5 generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except Exception as e:
+    except (RuntimeError, ValueError, ImportError) as e:
         print(f"Error in CodeT5 generation: {str(e)}")
         return fallback_generation(app_type, template_name, prompt, str(e))
 
@@ -292,13 +264,7 @@ def generate_with_t0(prompt, app_type, template_name):
         # based on the user's prompt
         return adapt_template(template, prompt)
 
-    except RuntimeError as e:
-        print(f"Runtime error in T0 generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except ValueError as e:
-        print(f"Value error in T0 generation: {str(e)}")
-        return fallback_generation(app_type, template_name, prompt, str(e))
-    except Exception as e:
+    except (RuntimeError, ValueError, ImportError) as e:
         print(f"Error in T0 generation: {str(e)}")
         return fallback_generation(app_type, template_name, prompt, str(e))
 
