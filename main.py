@@ -1,15 +1,27 @@
+"""
+AI Application Generator - Main Streamlit Application
+Enhanced with Pydantic for data validation and configuration management.
+"""
 import streamlit as st
 import os
+import random
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
 from utils import (
     format_code,
     validate_code,
+    validate_code_detailed,
     export_code,
     get_app_type_info,
     get_model_info,
 )
-import random
+from config import (
+    get_app_config,
+    get_api_key,
+    set_api_key,
+    get_config_summary,
+    validate_config
+)
 
 # Set page configuration
 st.set_page_config(
@@ -28,9 +40,14 @@ if "theme" not in st.session_state:
 with open("assets/custom.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Check for API key
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# Check for API key using config module
+GOOGLE_API_KEY = get_api_key()
 has_gemini_api_key = GOOGLE_API_KEY is not None
+
+# Validate configuration on startup
+config_valid, config_error = validate_config()
+if not config_valid:
+    st.warning(f"Configuration issue: {config_error}")
 
 # Application state
 if "generated_code" not in st.session_state:
@@ -140,12 +157,17 @@ with st.sidebar:
             help="Get a key at https://makersuite.google.com/",
         )
         if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
+            set_api_key(api_key)
             st.success("API Key set! Please refresh to apply.")
             if st.button("Refresh App"):
                 st.rerun()
     else:
         st.success("✅ Gemini API Key detected")
+
+    # Show configuration summary in expander
+    with st.expander("Configuration Summary"):
+        config_summary = get_config_summary()
+        st.json(config_summary)
 
     # App type selection
     app_type = st.radio(
