@@ -18,12 +18,12 @@ except RuntimeError as e:
         # Create dummy classes to prevent errors
         class DummyAutoModel:
             @classmethod
-            def from_pretrained(cls, *args, **kwargs):
+            def from_pretrained(cls, *_args, **_kwargs):
                 return None
         
         class DummyAutoTokenizer:
             @classmethod
-            def from_pretrained(cls, *args, **kwargs):
+            def from_pretrained(cls, *_args, **_kwargs):
                 return None
                 
         AutoModelForSeq2SeqLM = DummyAutoModel
