@@ -1,9 +1,9 @@
-
 """
 AI model integration module for code generation.
 Provides interfaces to multiple AI models including Gemini, CodeT5, and T0.
 This module handles loading models, generating code, and providing fallbacks.
 """
+from typing import Tuple, Optional, Any, Callable
 import os
 import re
 import google.generativeai as genai
@@ -34,9 +34,9 @@ except RuntimeError as e:
 
 
 # Initialize Gemini
-def initialize_gemini():
+def initialize_gemini() -> bool:
     """Initialize the Gemini API with the API key from environment variables.
-    
+
     Returns:
         bool: True if initialization was successful, False otherwise
     """
@@ -61,68 +61,66 @@ _T0_MODEL = None
 _T0_TOKENIZER = None
 
 
-def get_codet5_model():
+def _load_model_with_error_handling(
+    model_name: str, model_id: str
+) -> Tuple[Optional[Any], Optional[Any]]:
+    """Generic function to load a model and tokenizer with error handling.
+
+    Args:
+        model_name (str): Human-readable name of the model for logging
+        model_id (str): Hugging Face model identifier
+
+    Returns:
+        tuple: (model, tokenizer) or (None, None) if loading fails
+    """
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_id)
+        return model, tokenizer
+    except (RuntimeError, ValueError, ImportError) as e:
+        print(f"Error loading {model_name} model: {str(e)}")
+        return None, None
+    except Exception as e:
+        print(f"Unexpected error loading {model_name} model: {str(e)}")
+        return None, None
+
+
+def get_codet5_model() -> Tuple[Optional[Any], Optional[Any]]:
     """Load CodeT5 model and tokenizer.
-    
+
     Returns:
         tuple: (model, tokenizer) or (None, None) if loading fails
     """
     global _CODET5_MODEL, _CODET5_TOKENIZER
     if _CODET5_MODEL is None:
-        try:
-            _CODET5_TOKENIZER = AutoTokenizer.from_pretrained("Salesforce/codet5-small")
-            _CODET5_MODEL = AutoModelForSeq2SeqLM.from_pretrained(
-                "Salesforce/codet5-small"
-            )
-        except RuntimeError as e:
-            print(f"Error loading CodeT5 model: {str(e)}")
-            return None, None
-        except ValueError as e:
-            print(f"Value error loading CodeT5 model: {str(e)}")
-            return None, None
-        except ImportError as e:
-            print(f"Import error loading CodeT5 model: {str(e)}")
-            return None, None
-        except Exception as e:
-            print(f"Unexpected error loading CodeT5 model: {str(e)}")
-            return None, None
+        _CODET5_MODEL, _CODET5_TOKENIZER = _load_model_with_error_handling(
+            "CodeT5", "Salesforce/codet5-small"
+        )
     return _CODET5_MODEL, _CODET5_TOKENIZER
 
 
-def get_t0_model():
+def get_t0_model() -> Tuple[Optional[Any], Optional[Any]]:
     """Load T0_3B model and tokenizer.
-    
+
     Returns:
         tuple: (model, tokenizer) or (None, None) if loading fails
     """
     global _T0_MODEL, _T0_TOKENIZER
     if _T0_MODEL is None:
-        try:
-            _T0_TOKENIZER = AutoTokenizer.from_pretrained("bigscience/T0_3B")
-            _T0_MODEL = AutoModelForSeq2SeqLM.from_pretrained("bigscience/T0_3B")
-        except RuntimeError as e:
-            print(f"Error loading T0 model: {str(e)}")
-            return None, None
-        except ValueError as e:
-            print(f"Value error loading T0 model: {str(e)}")
-            return None, None
-        except ImportError as e:
-            print(f"Import error loading T0 model: {str(e)}")
-            return None, None
-        except Exception as e:
-            print(f"Unexpected error loading T0 model: {str(e)}")
-            return None, None
+        _T0_MODEL, _T0_TOKENIZER = _load_model_with_error_handling(
+            "T0", "bigscience/T0_3B"
+        )
     return _T0_MODEL, _T0_TOKENIZER
 
 
-def generate_with_gemini(prompt, app_type, template_name):
+def generate_with_gemini(prompt: str, app_type: str, template_name: str) -> str:
     """Generate code using Gemini Pro model.
-    
+
     Args:
         prompt (str): User's description of the desired application
         app_type (str): Type of application ('streamlit' or 'gradio')
         template_name (str): Name of the template to use as reference
-        
+
     Returns:
         str: Generated code or fallback if generation fails
     """
@@ -201,14 +199,14 @@ def generate_with_gemini(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def generate_with_codet5(prompt, app_type, template_name):
+def generate_with_codet5(prompt: str, app_type: str, template_name: str) -> str:
     """Generate code using CodeT5-small model.
-    
+
     Args:
         prompt (str): User's description of the desired application
         app_type (str): Type of application ('streamlit' or 'gradio')
         template_name (str): Name of the template to use as reference
-        
+
     Returns:
         str: Generated code or fallback if generation fails
     """
@@ -264,14 +262,14 @@ def generate_with_codet5(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def generate_with_t0(prompt, app_type, template_name):
+def generate_with_t0(prompt: str, app_type: str, template_name: str) -> str:
     """Generate code using T0_3B model.
-    
+
     Args:
         prompt (str): User's description of the desired application
         app_type (str): Type of application ('streamlit' or 'gradio')
         template_name (str): Name of the template to use as reference
-        
+
     Returns:
         str: Generated code or fallback if generation fails
     """
@@ -303,15 +301,17 @@ def generate_with_t0(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def fallback_generation(app_type, template_name, prompt, error_message):
+def fallback_generation(
+    app_type: str, template_name: str, prompt: str, error_message: str
+) -> str:
     """Generate fallback code when model generation fails.
-    
+
     Args:
         app_type (str): Type of application ('streamlit' or 'gradio')
         template_name (str): Name of the template to use
         prompt (str): Original user prompt
         error_message (str): Error message to include in the comment
-        
+
     Returns:
         str: Fallback code based on the template
     """
@@ -330,13 +330,13 @@ def fallback_generation(app_type, template_name, prompt, error_message):
 """
 
 
-def adapt_template(template, prompt):
+def adapt_template(template: str, prompt: str) -> str:
     """Adapts a template based on the user's prompt.
-    
+
     Args:
         template (str): Template code to adapt
         prompt (str): User's prompt to extract information from
-        
+
     Returns:
         str: Adapted template code
     """
@@ -368,12 +368,12 @@ def adapt_template(template, prompt):
     return adapted_code
 
 
-def extract_keywords(prompt):
+def extract_keywords(prompt: str) -> list:
     """Extract potential keywords from the prompt.
-    
+
     Args:
         prompt (str): User's prompt
-        
+
     Returns:
         list: List of extracted keywords
     """
@@ -397,12 +397,12 @@ def extract_keywords(prompt):
     return [word for word in words if word not in common_words and len(word) > 3]
 
 
-def generate_title_from_prompt(prompt):
+def generate_title_from_prompt(prompt: str) -> str:
     """Generate a title from the user's prompt.
-    
+
     Args:
         prompt (str): User's prompt
-        
+
     Returns:
         str: Generated title
     """
