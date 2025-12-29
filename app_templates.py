@@ -3,12 +3,13 @@ Template code for different types of Streamlit and Gradio applications.
 Provides ready-to-use templates for various application types.
 """
 
-def get_streamlit_template(template_name):
+
+def get_streamlit_template(template_name: str) -> str:
     """Returns template code for Streamlit apps.
-    
+
     Args:
         template_name (str): Name of the template to retrieve
-        
+
     Returns:
         str: Python code for the requested template
     """
@@ -436,12 +437,12 @@ if uploaded_file is not None:
     return templates.get(template_name, templates["blank"])
 
 
-def get_gradio_template(template_name):
+def get_gradio_template(template_name: str) -> str:
     """Returns template code for Gradio apps.
-    
+
     Args:
         template_name (str): Name of the template to retrieve
-        
+
     Returns:
         str: Python code for the requested template
     """

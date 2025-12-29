@@ -1,8 +1,10 @@
+from typing import Tuple
 import streamlit as st
 import ast
 import base64
 
-def format_code(code):
+
+def format_code(code: str) -> str:
     """Format the generated code.
 
     Args:
@@ -23,7 +25,7 @@ def format_code(code):
         # For now, just return the code with a comment about the error
         return f"# Note: The generated code has a syntax error that may need fixing:\n# {str(e)}\n\n{code}"
 
-def validate_code(code):
+def validate_code(code: str) -> Tuple[bool, str]:
     """Validate if the code has proper syntax.
 
     Args:
@@ -32,6 +34,8 @@ def validate_code(code):
     Returns:
         tuple: A tuple containing a boolean indicating whether the code is valid and an error message (if any).
     """
+    if not code or not isinstance(code, str):
+        return False, "Code must be a non-empty string"
     try:
         ast.parse(code)
         return True, "Code syntax is valid."
@@ -42,7 +46,7 @@ def validate_code(code):
     except Exception as e:
         return False, f"Error validating code: {str(e)}"
 
-def export_code(code, filename="app.py"):
+def export_code(code: str, filename: str = "app.py") -> str:
     """Create a download link for the code file.
 
     Args:
@@ -52,11 +56,13 @@ def export_code(code, filename="app.py"):
     Returns:
         str: HTML code for a download link.
     """
+    if not code:
+        return ""
     b64 = base64.b64encode(code.encode()).decode()
     href = f'<a href="data:file/text;base64,{b64}" download="{filename}" class="download-btn">💾 Download {filename}</a>'
     return href
 
-def get_app_type_info(app_type):
+def get_app_type_info(app_type: str) -> str:
     """Return information about app types.
 
     Args:
@@ -65,6 +71,10 @@ def get_app_type_info(app_type):
     Returns:
         str: Information about the app type.
     """
+    if not isinstance(app_type, str):
+        return "Invalid app type"
+
+    app_type = app_type.lower()
     info = {
         "streamlit": """
 ### Streamlit
@@ -106,7 +116,7 @@ def get_app_type_info(app_type):
 
     return info.get(app_type, "No information available for this app type.")
 
-def get_model_info(model_name):
+def get_model_info(model_name: str) -> str:
     """Return information about AI models.
 
     Args:
@@ -115,6 +125,10 @@ def get_model_info(model_name):
     Returns:
         str: Information about the model.
     """
+    if not isinstance(model_name, str):
+        return "Invalid model name"
+
+    model_name = model_name.lower()
     info = {
         "gemini_pro_20": """
 ### Gemini Pro 2.0
