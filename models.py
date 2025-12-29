@@ -6,8 +6,18 @@ This module handles loading models, generating code, and providing fallbacks.
 """
 import os
 import re
+from typing import Optional, Tuple, Any
 import google.generativeai as genai
 import app_templates
+from schemas import (
+    CodeGenerationRequest,
+    CodeGenerationResponse,
+    GenerationConfig,
+    ModelType,
+    AppType,
+    TemplateType
+)
+from config import get_api_key
 
 # Wrap transformer imports in try-except to handle PyTorch errors
 try:
@@ -34,13 +44,13 @@ except RuntimeError as e:
 
 
 # Initialize Gemini
-def initialize_gemini():
+def initialize_gemini() -> bool:
     """Initialize the Gemini API with the API key from environment variables.
-    
+
     Returns:
         bool: True if initialization was successful, False otherwise
     """
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = get_api_key()
     if api_key:
         try:
             genai.configure(api_key=api_key)
@@ -61,11 +71,11 @@ _T0_MODEL = None
 _T0_TOKENIZER = None
 
 
-def get_codet5_model():
+def get_codet5_model() -> Tuple[Optional[Any], Optional[Any]]:
     """Load CodeT5 model and tokenizer.
-    
+
     Returns:
-        tuple: (model, tokenizer) or (None, None) if loading fails
+        Tuple[Optional[Any], Optional[Any]]: (model, tokenizer) or (None, None) if loading fails
     """
     global _CODET5_MODEL, _CODET5_TOKENIZER
     if _CODET5_MODEL is None:
@@ -89,11 +99,11 @@ def get_codet5_model():
     return _CODET5_MODEL, _CODET5_TOKENIZER
 
 
-def get_t0_model():
+def get_t0_model() -> Tuple[Optional[Any], Optional[Any]]:
     """Load T0_3B model and tokenizer.
-    
+
     Returns:
-        tuple: (model, tokenizer) or (None, None) if loading fails
+        Tuple[Optional[Any], Optional[Any]]: (model, tokenizer) or (None, None) if loading fails
     """
     global _T0_MODEL, _T0_TOKENIZER
     if _T0_MODEL is None:
@@ -115,17 +125,25 @@ def get_t0_model():
     return _T0_MODEL, _T0_TOKENIZER
 
 
-def generate_with_gemini(prompt, app_type, template_name):
+def generate_with_gemini(
+    prompt: str,
+    app_type: str,
+    template_name: str,
+    generation_config: Optional[GenerationConfig] = None
+) -> str:
     """Generate code using Gemini Pro model.
-    
+
     Args:
-        prompt (str): User's description of the desired application
-        app_type (str): Type of application ('streamlit' or 'gradio')
-        template_name (str): Name of the template to use as reference
-        
+        prompt: User's description of the desired application
+        app_type: Type of application ('streamlit' or 'gradio')
+        template_name: Name of the template to use as reference
+        generation_config: Optional generation configuration
+
     Returns:
         str: Generated code or fallback if generation fails
     """
+    if generation_config is None:
+        generation_config = GenerationConfig()
     # Initialize Gemini if not already initialized
     if not initialize_gemini():
         return fallback_generation(
@@ -165,15 +183,15 @@ def generate_with_gemini(prompt, app_type, template_name):
         """
 
         # Set up the Gemini model
-        generation_config = {
-            "temperature": 0.2,
-            "top_p": 0.8,
-            "top_k": 40,
-            "max_output_tokens": 8192,
+        gen_config_dict = {
+            "temperature": generation_config.temperature,
+            "top_p": generation_config.top_p,
+            "top_k": generation_config.top_k,
+            "max_output_tokens": generation_config.max_output_tokens,
         }
 
         model = genai.GenerativeModel(
-            model_name="gemini-pro", generation_config=generation_config
+            model_name="gemini-pro", generation_config=gen_config_dict
         )
 
         # Generate the response
@@ -201,14 +219,18 @@ def generate_with_gemini(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def generate_with_codet5(prompt, app_type, template_name):
+def generate_with_codet5(
+    prompt: str,
+    app_type: str,
+    template_name: str
+) -> str:
     """Generate code using CodeT5-small model.
-    
+
     Args:
-        prompt (str): User's description of the desired application
-        app_type (str): Type of application ('streamlit' or 'gradio')
-        template_name (str): Name of the template to use as reference
-        
+        prompt: User's description of the desired application
+        app_type: Type of application ('streamlit' or 'gradio')
+        template_name: Name of the template to use as reference
+
     Returns:
         str: Generated code or fallback if generation fails
     """
@@ -264,14 +286,18 @@ def generate_with_codet5(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def generate_with_t0(prompt, app_type, template_name):
+def generate_with_t0(
+    prompt: str,
+    app_type: str,
+    template_name: str
+) -> str:
     """Generate code using T0_3B model.
-    
+
     Args:
-        prompt (str): User's description of the desired application
-        app_type (str): Type of application ('streamlit' or 'gradio')
-        template_name (str): Name of the template to use as reference
-        
+        prompt: User's description of the desired application
+        app_type: Type of application ('streamlit' or 'gradio')
+        template_name: Name of the template to use as reference
+
     Returns:
         str: Generated code or fallback if generation fails
     """
@@ -303,15 +329,20 @@ def generate_with_t0(prompt, app_type, template_name):
         return fallback_generation(app_type, template_name, prompt, str(e))
 
 
-def fallback_generation(app_type, template_name, prompt, error_message):
+def fallback_generation(
+    app_type: str,
+    template_name: str,
+    prompt: str,
+    error_message: str
+) -> str:
     """Generate fallback code when model generation fails.
-    
+
     Args:
-        app_type (str): Type of application ('streamlit' or 'gradio')
-        template_name (str): Name of the template to use
-        prompt (str): Original user prompt
-        error_message (str): Error message to include in the comment
-        
+        app_type: Type of application ('streamlit' or 'gradio')
+        template_name: Name of the template to use
+        prompt: Original user prompt
+        error_message: Error message to include in the comment
+
     Returns:
         str: Fallback code based on the template
     """
@@ -330,13 +361,13 @@ def fallback_generation(app_type, template_name, prompt, error_message):
 """
 
 
-def adapt_template(template, prompt):
+def adapt_template(template: str, prompt: str) -> str:
     """Adapts a template based on the user's prompt.
-    
+
     Args:
-        template (str): Template code to adapt
-        prompt (str): User's prompt to extract information from
-        
+        template: Template code to adapt
+        prompt: User's prompt to extract information from
+
     Returns:
         str: Adapted template code
     """
@@ -368,14 +399,14 @@ def adapt_template(template, prompt):
     return adapted_code
 
 
-def extract_keywords(prompt):
+def extract_keywords(prompt: str) -> list[str]:
     """Extract potential keywords from the prompt.
-    
+
     Args:
-        prompt (str): User's prompt
-        
+        prompt: User's prompt
+
     Returns:
-        list: List of extracted keywords
+        list[str]: List of extracted keywords
     """
     common_words = {
         "a",
@@ -397,12 +428,12 @@ def extract_keywords(prompt):
     return [word for word in words if word not in common_words and len(word) > 3]
 
 
-def generate_title_from_prompt(prompt):
+def generate_title_from_prompt(prompt: str) -> str:
     """Generate a title from the user's prompt.
-    
+
     Args:
-        prompt (str): User's prompt
-        
+        prompt: User's prompt
+
     Returns:
         str: Generated title
     """
