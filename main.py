@@ -1,5 +1,8 @@
-import streamlit as st
 import os
+import random
+
+import streamlit as st
+
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
 from utils import (
@@ -9,7 +12,6 @@ from utils import (
     get_app_type_info,
     get_model_info,
 )
-import random
 
 # Set page configuration
 st.set_page_config(
@@ -280,16 +282,29 @@ with col1:
     user_prompt = st.text_area(
         "Describe your application in detail",
         height=150,
-        placeholder="Example: Create a data visualization app that allows users to upload a CSV file and visualize the data using different chart types like bar charts, line charts, and scatter plots.",
+        placeholder=(
+            "Example: Create a data visualization app that allows users to upload a CSV file "
+            "and visualize the data using different chart types like bar charts, line charts, "
+            "and scatter plots."
+        ),
     )
 
     # Examples accordion
     with st.expander("Need inspiration? Try these examples"):
         example_prompts = [
-            "A simple image classifier that can identify dogs, cats, and birds using a pre-trained model.",
-            "A sentiment analysis app that analyzes the sentiment of user-entered text and provides a positive, negative, or neutral rating.",
+            (
+                "A simple image classifier that can identify dogs, cats, and birds "
+                "using a pre-trained model."
+            ),
+            (
+                "A sentiment analysis app that analyzes the sentiment of user-entered text "
+                "and provides a positive, negative, or neutral rating."
+            ),
             "A data dashboard that visualizes COVID-19 statistics with interactive maps and charts.",
-            "A file converter app that allows users to upload images and convert them to different formats.",
+            (
+                "A file converter app that allows users to upload images and convert them "
+                "to different formats."
+            ),
         ]
 
         for i, example in enumerate(example_prompts):
@@ -456,9 +471,13 @@ st.markdown(
     """
     <div style="text-align: center;">
         <p>Built with ❤️ using Streamlit and multiple AI models</p>
-        <p>Inspired by Hugging Face Spaces like <a href="https://huggingface.co/spaces/deepseek-ai/deepseek-coder-33b-instruct">Deepseek Coder</a>, 
-        <a href="https://huggingface.co/spaces/codellama/codellama-playground">CodeLlama Playground</a>, and 
-        <a href="https://huggingface.co/spaces/whackthejacker/ai-python-code-reviewer">AI Python Code Reviewer</a></p>
+        <p>Inspired by Hugging Face Spaces like
+        <a href="https://huggingface.co/spaces/deepseek-ai/deepseek-coder-33b-instruct">
+        Deepseek Coder</a>,
+        <a href="https://huggingface.co/spaces/codellama/codellama-playground">
+        CodeLlama Playground</a>, and
+        <a href="https://huggingface.co/spaces/whackthejacker/ai-python-code-reviewer">
+        AI Python Code Reviewer</a></p>
     </div>
     """,
     unsafe_allow_html=True,

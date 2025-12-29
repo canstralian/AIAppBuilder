@@ -1,4 +1,3 @@
-import streamlit as st
 import ast
 import base64
 
@@ -18,8 +17,6 @@ def format_code(code):
         return code
     except SyntaxError as e:
         # If there's a syntax error, attempt basic cleanup
-        lines = code.split('\n')
-        # Try to identify and fix common syntax issues
         # For now, just return the code with a comment about the error
         return f"# Note: The generated code has a syntax error that may need fixing:\n# {str(e)}\n\n{code}"
 
