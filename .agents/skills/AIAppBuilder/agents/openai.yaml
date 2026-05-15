@@ -1,0 +1,6 @@
+interface:
+  display_name: "AIAppBuilder"
+  short_description: "Repo-specific patterns and workflows for AIAppBuilder"
+  default_prompt: "Use the AIAppBuilder repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
