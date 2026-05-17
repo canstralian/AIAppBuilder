@@ -153,7 +153,7 @@ def get_app_type_info(app_type: str) -> str:
 **Description:** {app_info.description}
 
 **Key Features:**
-{chr(10).join(f'- {feature}' for feature in app_info.key_features)}
+{\n.join(f'- {feature}' for feature in app_info.key_features)}
 
 **Ideal for:**
 {chr(10).join(f'- {use_case}' for use_case in app_info.ideal_for)}
