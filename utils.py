@@ -1,21 +1,11 @@
-"""
-Utility functions for code validation, formatting, and export.
-Enhanced with Pydantic validation for type safety and data integrity.
-"""
+from typing import Tuple
 import streamlit as st
 import ast
 import base64
-from typing import Tuple, Optional
-from schemas import (
-    CodeValidationResult,
-    FileExportRequest,
-    ModelInfo,
-    AppTypeInfo,
-    ModelType
-)
+
 
 def format_code(code: str) -> str:
-    """Format the generated code with syntax validation.
+    """Format the generated code.
 
     Args:
         code: The code to format
@@ -48,9 +38,8 @@ def validate_code(code: str) -> Tuple[bool, str]:
     Returns:
         Tuple[bool, str]: (is_valid, error_message)
     """
-    if not code or code.isspace():
-        return False, "Code is empty or contains only whitespace"
-
+    if not code or not isinstance(code, str):
+        return False, "Code must be a non-empty string"
     try:
         ast.parse(code)
         return True, "Code syntax is valid."
@@ -61,9 +50,8 @@ def validate_code(code: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Error validating code: {str(e)}"
 
-
-def validate_code_detailed(code: str) -> CodeValidationResult:
-    """Validate code and return detailed validation result.
+def export_code(code: str, filename: str = "app.py") -> str:
+    """Create a download link for the code file.
 
     Args:
         code: The code to validate
@@ -71,42 +59,14 @@ def validate_code_detailed(code: str) -> CodeValidationResult:
     Returns:
         CodeValidationResult: Detailed validation result with suggestions
     """
-    if not code or code.isspace():
-        return CodeValidationResult(
-            is_valid=False,
-            error_message="Code is empty or contains only whitespace",
-            suggestions=["Provide valid Python code"]
-        )
+    if not code:
+        return ""
+    b64 = base64.b64encode(code.encode()).decode()
+    href = f'<a href="data:file/text;base64,{b64}" download="{filename}" class="download-btn">💾 Download {filename}</a>'
+    return href
 
-    try:
-        ast.parse(code)
-        return CodeValidationResult(
-            is_valid=True,
-            error_message=None,
-            suggestions=[]
-        )
-    except SyntaxError as e:
-        suggestions = []
-        if "invalid syntax" in str(e).lower():
-            suggestions.append("Check for missing colons, parentheses, or brackets")
-        if "indentation" in str(e).lower():
-            suggestions.append("Verify consistent indentation (use spaces, not tabs)")
-
-        return CodeValidationResult(
-            is_valid=False,
-            error_message=str(e),
-            line_number=e.lineno,
-            suggestions=suggestions or ["Review Python syntax documentation"]
-        )
-    except Exception as e:
-        return CodeValidationResult(
-            is_valid=False,
-            error_message=f"Validation error: {str(e)}",
-            suggestions=["Check for unusual characters or encoding issues"]
-        )
-
-def export_code(code: str, filename: str = "app.py") -> str:
-    """Create a download link for the code file with validation.
+def get_app_type_info(app_type: str) -> str:
+    """Return information about app types.
 
     Args:
         code: The code to export
@@ -118,9 +78,13 @@ def export_code(code: str, filename: str = "app.py") -> str:
     Raises:
         ValueError: If the code is empty or filename is invalid
     """
-    try:
-        # Validate using Pydantic model
-        export_request = FileExportRequest(code=code, filename=filename)
+    if not isinstance(app_type, str):
+        return "Invalid app type"
+
+    app_type = app_type.lower()
+    info = {
+        "streamlit": """
+### Streamlit
 
         # Encode the code
         b64 = base64.b64encode(export_request.code.encode()).decode()
@@ -206,62 +170,33 @@ def get_model_info(model_name: str) -> str:
     Returns:
         str: Formatted information about the model
     """
-    info_models = {
-        "gemini_pro_20": ModelInfo(
-            name="Gemini Pro 2.0",
-            provider="Google",
-            description="Google's powerful large language model with advanced code generation capabilities",
-            strengths=[
-                "High-quality code generation",
-                "Follows instructions well",
-                "Handles complex prompts",
-                "Good documentation in generated code"
-            ],
-            limitations=[
-                "Requires API key",
-                "Rate limits may apply",
-                "Can be relatively slower than local models"
-            ],
-            requires_api_key=True,
-            is_available=True
-        ),
-        "codet5": ModelInfo(
-            name="CodeT5-small",
-            provider="Salesforce",
-            description="Specialized code generation model fine-tuned specifically for programming tasks",
-            strengths=[
-                "Focused on code generation",
-                "More lightweight than larger models",
-                "Faster inference times",
-                "Can run locally"
-            ],
-            limitations=[
-                "Smaller context window",
-                "Less general knowledge",
-                "May produce simpler code"
-            ],
-            requires_api_key=False,
-            is_available=True
-        ),
-        "t0_3b": ModelInfo(
-            name="T0_3B",
-            provider="BigScience",
-            description="3 billion parameter language model trained on diverse datasets with zero-shot capabilities",
-            strengths=[
-                "General-purpose capabilities",
-                "Good instruction following",
-                "Diverse training data",
-                "Balance of size and performance"
-            ],
-            limitations=[
-                "Not specialized for code generation",
-                "May require adaptation of templates",
-                "Medium-sized model (3B parameters)"
-            ],
-            requires_api_key=False,
-            is_available=True
-        )
-    }
+    if not isinstance(model_name, str):
+        return "Invalid model name"
+
+    model_name = model_name.lower()
+    info = {
+        "gemini_pro_20": """
+### Gemini Pro 2.0
+
+**Provider:** Google
+
+**Description:** Google's powerful large language model with advanced code generation capabilities.
+
+**Strengths:**
+- High-quality code generation
+- Follows instructions well
+- Handles complex prompts
+- Good documentation in generated code
+
+**Limitations:**
+- May require API key
+- Rate limits may apply
+- Can be relatively slower than local models
+        """,
+        "codet5": """
+### CodeT5-small
+
+**Provider:** Salesforce
 
     model_info = info_models.get(model_name.lower())
     if not model_info:
