@@ -238,7 +238,7 @@ class UserPromptHistory(BaseModel):
     """Model for storing user prompt history."""
     prompts: List[str] = Field(
         default_factory=list,
-        max_length=100,
+        max_items=100,
         description="List of user prompts"
     )
 
