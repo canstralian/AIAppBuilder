@@ -246,6 +246,9 @@ class UserPromptHistory(BaseModel):
         """Add a prompt to history."""
         if prompt and not prompt.isspace():
             self.prompts.append(prompt.strip())
+            # Enforce max history size
+            if len(self.prompts) > 100:
+                self.prompts.pop(0)
 
     def get_recent(self, count: int = 10) -> List[str]:
         """Get recent prompts."""
