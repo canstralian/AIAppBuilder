@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from typing import Dict, List, Callable
 from models import generate_with_gemini, generate_with_codet5, generate_with_t0
 from app_templates import get_streamlit_template, get_gradio_template
 from utils import (
@@ -10,6 +11,21 @@ from utils import (
     get_model_info,
 )
 import random
+
+# Constants
+PROMPT_TEXTAREA_HEIGHT = 150
+PREVIEW_CHAR_LIMIT = 500
+DEFAULT_TEMPERATURE = 0.7
+TEMPERATURE_MIN = 0.0
+TEMPERATURE_MAX = 1.0
+TEMPERATURE_STEP = 0.1
+
+# Model mapping
+MODEL_GENERATORS: Dict[str, Callable[[str, str, str], str]] = {
+    "gemini_pro_20": generate_with_gemini,
+    "codet5": generate_with_codet5,
+    "t0_3b": generate_with_t0,
+}
 
 # Set page configuration
 st.set_page_config(
@@ -25,8 +41,13 @@ if "theme" not in st.session_state:
     st.session_state.theme = "light"
 
 # Custom CSS
-with open("assets/custom.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+try:
+    with open("assets/custom.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except FileNotFoundError:
+    st.warning("Custom CSS file not found. Using default styling.")
+except Exception as e:
+    st.error(f"Error loading custom CSS: {str(e)}")
 
 # Check for API key
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -153,9 +174,7 @@ with st.sidebar:
         ["Streamlit", "Gradio"],
         key="app_type_radio",
         index=0,
-        on_change=lambda: setattr(
-            st.session_state, "app_type", st.session_state.app_type_radio.lower()
-        ),
+        on_change=on_app_type_change,
     )
 
     # Template selection
@@ -227,22 +246,19 @@ with st.sidebar:
         available_models,
         key="model_name_radio",
         index=1 if not has_gemini_api_key else 0,  # Default to CodeT5 if no API key
-        on_change=lambda: setattr(
-            st.session_state,
-            "model_name",
-            st.session_state.model_name_radio.split(" ")[0].lower().replace(".", "")
-            + (
-                st.session_state.model_name_radio.split(" ")[1].lower()
-                if len(st.session_state.model_name_radio.split(" ")) > 1
-                and st.session_state.model_name_radio.split(" ")[0].lower() == "gemini"
-                else ""
-            ),
-        ),
+        on_change=on_model_name_change,
     )
 
     # Advanced options
     with st.expander("Advanced Options"):
-        st.slider("Temperature", 0.0, 1.0, 0.7, 0.1, key="temperature")
+        st.slider(
+            "Temperature",
+            TEMPERATURE_MIN,
+            TEMPERATURE_MAX,
+            DEFAULT_TEMPERATURE,
+            TEMPERATURE_STEP,
+            key="temperature",
+        )
         st.checkbox("Enable code validation", value=True, key="validate_code")
         st.checkbox("Auto-format code", value=True, key="format_code")
 
@@ -261,14 +277,84 @@ with st.sidebar:
     with st.expander("Template Preview"):
         if app_type.lower() == "streamlit":
             st.code(
-                get_streamlit_template(st.session_state.template_name)[:500] + "...",
+                get_streamlit_template(st.session_state.template_name)[
+                    :PREVIEW_CHAR_LIMIT
+                ]
+                + "...",
                 language="python",
             )
         else:
             st.code(
-                get_gradio_template(st.session_state.template_name)[:500] + "...",
+                get_gradio_template(st.session_state.template_name)[:PREVIEW_CHAR_LIMIT]
+                + "...",
                 language="python",
             )
+
+
+# Callback functions for UI interactions
+def on_app_type_change():
+    """Callback for app type radio button."""
+    st.session_state.app_type = st.session_state.app_type_radio.lower()
+
+
+def on_model_name_change():
+    """Callback for model name radio button."""
+    # Parse the model name from the display name
+    model_display = st.session_state.model_name_radio
+    # Remove warning emoji if present
+    model_display = model_display.replace(" ⚠️", "")
+    # Convert to internal format
+    if "Gemini" in model_display:
+        st.session_state.model_name = "gemini_pro_20"
+    elif "CodeT5" in model_display:
+        st.session_state.model_name = "codet5"
+    elif "T0" in model_display:
+        st.session_state.model_name = "t0_3b"
+
+
+# Helper function for code generation
+def generate_code_with_model(
+    model_name: str, prompt: str, app_type: str, template_name: str
+) -> str:
+    """Generate code using the specified model.
+
+    Args:
+        model_name (str): Name of the model to use
+        prompt (str): User's prompt
+        app_type (str): Type of application
+        template_name (str): Template to use
+
+    Returns:
+        str: Generated code
+    """
+    generator_func = MODEL_GENERATORS.get(model_name)
+    if generator_func:
+        return generator_func(prompt, app_type, template_name)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
+
+
+def process_generated_code(code: str) -> str:
+    """Process generated code with formatting and validation.
+
+    Args:
+        code (str): Generated code to process
+
+    Returns:
+        str: Processed code
+    """
+    # Format the code if requested
+    if st.session_state.format_code:
+        code = format_code(code)
+
+    # Validate the code if requested
+    if st.session_state.validate_code:
+        is_valid, error_msg = validate_code(code)
+        if not is_valid:
+            st.error(f"Generated code has syntax errors: {error_msg}")
+
+    return code
+
 
 # Main content
 col1, col2 = st.columns([1, 1])
@@ -279,7 +365,7 @@ with col1:
     # User input
     user_prompt = st.text_area(
         "Describe your application in detail",
-        height=150,
+        height=PROMPT_TEXTAREA_HEIGHT,
         placeholder="Example: Create a data visualization app that allows users to upload a CSV file and visualize the data using different chart types like bar charts, line charts, and scatter plots.",
     )
 
@@ -317,36 +403,16 @@ with col1:
             model_chosen = st.session_state.model_name
 
             try:
-                if model_chosen == "gemini_pro_20":
-                    st.session_state.generated_code = generate_with_gemini(
-                        user_prompt,
-                        st.session_state.app_type,
-                        st.session_state.template_name,
-                    )
-                elif model_chosen == "codet5":
-                    st.session_state.generated_code = generate_with_codet5(
-                        user_prompt,
-                        st.session_state.app_type,
-                        st.session_state.template_name,
-                    )
-                elif model_chosen == "t0_3b":
-                    st.session_state.generated_code = generate_with_t0(
-                        user_prompt,
-                        st.session_state.app_type,
-                        st.session_state.template_name,
-                    )
+                # Generate code using the specified model
+                generated_code = generate_code_with_model(
+                    model_chosen,
+                    user_prompt,
+                    st.session_state.app_type,
+                    st.session_state.template_name,
+                )
 
-                # Format the code if requested
-                if st.session_state.format_code:
-                    st.session_state.generated_code = format_code(
-                        st.session_state.generated_code
-                    )
-
-                # Validate the code if requested
-                if st.session_state.validate_code:
-                    is_valid, error_msg = validate_code(st.session_state.generated_code)
-                    if not is_valid:
-                        st.error(f"Generated code has syntax errors: {error_msg}")
+                # Process the generated code
+                st.session_state.generated_code = process_generated_code(generated_code)
 
                 # Success message
                 st.success("App generated successfully!")
@@ -398,35 +464,23 @@ with col2:
             with st.spinner("Regenerating code..."):
                 # Select a different model randomly
                 current_model = st.session_state.model_name
-                available_models = ["gemini_pro_20", "codet5", "t0_3b"]
+                available_models = list(MODEL_GENERATORS.keys())
                 available_models.remove(current_model)
                 new_model = random.choice(available_models)
 
                 try:
-                    if new_model == "gemini_pro_20":
-                        st.session_state.generated_code = generate_with_gemini(
-                            st.session_state.prompt_history[-1],
-                            st.session_state.app_type,
-                            st.session_state.template_name,
-                        )
-                    elif new_model == "codet5":
-                        st.session_state.generated_code = generate_with_codet5(
-                            st.session_state.prompt_history[-1],
-                            st.session_state.app_type,
-                            st.session_state.template_name,
-                        )
-                    elif new_model == "t0_3b":
-                        st.session_state.generated_code = generate_with_t0(
-                            st.session_state.prompt_history[-1],
-                            st.session_state.app_type,
-                            st.session_state.template_name,
-                        )
+                    # Generate code with the new model
+                    generated_code = generate_code_with_model(
+                        new_model,
+                        st.session_state.prompt_history[-1],
+                        st.session_state.app_type,
+                        st.session_state.template_name,
+                    )
 
-                    # Format the code if requested
-                    if st.session_state.format_code:
-                        st.session_state.generated_code = format_code(
-                            st.session_state.generated_code
-                        )
+                    # Process the generated code
+                    st.session_state.generated_code = process_generated_code(
+                        generated_code
+                    )
 
                     # Success message
                     st.success(
