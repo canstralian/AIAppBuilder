@@ -8,31 +8,35 @@ def format_code(code: str) -> str:
     """Format the generated code.
 
     Args:
-        code (str): The code to format.
+        code: The code to format
 
     Returns:
-        str: The formatted code.
+        str: The formatted code
     """
+    if not code or code.isspace():
+        return "# Empty code provided"
+
     try:
         # Parse the code to validate syntax
         ast.parse(code)
-        # Code is valid, no need for complex formatting at this stage
-        return code
+        # Code is valid, return as-is (can add formatter like black here)
+        return code.strip()
     except SyntaxError as e:
-        # If there's a syntax error, attempt basic cleanup
-        lines = code.split('\n')
-        # Try to identify and fix common syntax issues
-        # For now, just return the code with a comment about the error
-        return f"# Note: The generated code has a syntax error that may need fixing:\n# {str(e)}\n\n{code}"
+        # If there's a syntax error, add a comment about the error
+        error_line = e.lineno if e.lineno else "unknown"
+        return f"# Note: Syntax error detected at line {error_line}\n# {str(e)}\n\n{code}"
+    except Exception as e:
+        # Handle other parsing errors
+        return f"# Note: Error during code formatting: {str(e)}\n\n{code}"
 
 def validate_code(code: str) -> Tuple[bool, str]:
     """Validate if the code has proper syntax.
 
     Args:
-        code (str): The code to validate.
+        code: The code to validate
 
     Returns:
-        tuple: A tuple containing a boolean indicating whether the code is valid and an error message (if any).
+        Tuple[bool, str]: (is_valid, error_message)
     """
     if not code or not isinstance(code, str):
         return False, "Code must be a non-empty string"
@@ -40,7 +44,7 @@ def validate_code(code: str) -> Tuple[bool, str]:
         ast.parse(code)
         return True, "Code syntax is valid."
     except SyntaxError as e:
-        line_number = e.lineno
+        line_number = e.lineno if e.lineno else 0
         error_message = str(e)
         return False, f"Syntax error at line {line_number}: {error_message}"
     except Exception as e:
@@ -50,11 +54,10 @@ def export_code(code: str, filename: str = "app.py") -> str:
     """Create a download link for the code file.
 
     Args:
-        code (str): The code to export.
-        filename (str, optional): The name of the file. Defaults to "app.py".
+        code: The code to validate
 
     Returns:
-        str: HTML code for a download link.
+        CodeValidationResult: Detailed validation result with suggestions
     """
     if not code:
         return ""
@@ -66,10 +69,14 @@ def get_app_type_info(app_type: str) -> str:
     """Return information about app types.
 
     Args:
-        app_type (str): The type of app.
+        code: The code to export
+        filename: The name of the file (defaults to "app.py")
 
     Returns:
-        str: Information about the app type.
+        str: HTML code for a download link
+
+    Raises:
+        ValueError: If the code is empty or filename is invalid
     """
     if not isinstance(app_type, str):
         return "Invalid app type"
@@ -79,51 +86,89 @@ def get_app_type_info(app_type: str) -> str:
         "streamlit": """
 ### Streamlit
 
-**Description:** Streamlit is an open-source Python framework that makes it easy to create beautiful, custom web apps for machine learning and data science.
+        # Encode the code
+        b64 = base64.b64encode(export_request.code.encode()).decode()
+        href = f'<a href="data:file/text;base64,{b64}" download="{export_request.filename}" class="download-btn">💾 Download {export_request.filename}</a>'
+        return href
+    except Exception as e:
+        # Return an error message if validation fails
+        return f'<span style="color: red;">Error creating download link: {str(e)}</span>'
 
-**Key Features:**
-- Rapid prototyping
-- Simple Python API
-- Real-time updates
-- Interactive widgets
-- Easy deployment
+def get_app_type_info(app_type: str) -> str:
+    """Return information about app types.
 
-**Ideal for:**
-- Data visualization dashboards
-- Machine learning demonstrations
-- Simple web tools
-- Data exploration apps
-        """,
-        "gradio": """
-### Gradio
+    Args:
+        app_type: The type of app
 
-**Description:** Gradio is a Python library that allows you to quickly create customizable UI components for your machine learning models, APIs, and data processing pipelines.
-
-**Key Features:**
-- Easy interface creation
-- Multiple input/output types
-- Simplified deployment
-- API generation
-- Hugging Face integration
-
-**Ideal for:**
-- ML model demos
-- Image/audio/text processing interfaces
-- Multi-modal applications
-- Interactive machine learning demos
-        """
+    Returns:
+        str: Formatted information about the app type
+    """
+    info_models = {
+        "streamlit": AppTypeInfo(
+            name="Streamlit",
+            description="Open-source Python framework for creating beautiful web apps for ML and data science",
+            key_features=[
+                "Rapid prototyping",
+                "Simple Python API",
+                "Real-time updates",
+                "Interactive widgets",
+                "Easy deployment"
+            ],
+            ideal_for=[
+                "Data visualization dashboards",
+                "Machine learning demonstrations",
+                "Simple web tools",
+                "Data exploration apps"
+            ],
+            documentation_url="https://docs.streamlit.io"
+        ),
+        "gradio": AppTypeInfo(
+            name="Gradio",
+            description="Python library for creating customizable UI components for ML models and APIs",
+            key_features=[
+                "Easy interface creation",
+                "Multiple input/output types",
+                "Simplified deployment",
+                "API generation",
+                "Hugging Face integration"
+            ],
+            ideal_for=[
+                "ML model demos",
+                "Image/audio/text processing interfaces",
+                "Multi-modal applications",
+                "Interactive machine learning demos"
+            ],
+            documentation_url="https://www.gradio.app/docs"
+        )
     }
 
-    return info.get(app_type, "No information available for this app type.")
+    app_info = info_models.get(app_type.lower())
+    if not app_info:
+        return "No information available for this app type."
+
+    # Format the information
+    return f"""
+### {app_info.name}
+
+**Description:** {app_info.description}
+
+**Key Features:**
+{\n.join(f'- {feature}' for feature in app_info.key_features)}
+
+**Ideal for:**
+{chr(10).join(f'- {use_case}' for use_case in app_info.ideal_for)}
+
+**Documentation:** {app_info.documentation_url}
+    """
 
 def get_model_info(model_name: str) -> str:
     """Return information about AI models.
 
     Args:
-        model_name (str): The name of the model.
+        model_name: The name of the model
 
     Returns:
-        str: Information about the model.
+        str: Formatted information about the model
     """
     if not isinstance(model_name, str):
         return "Invalid model name"
@@ -153,37 +198,25 @@ def get_model_info(model_name: str) -> str:
 
 **Provider:** Salesforce
 
-**Description:** Specialized code generation model fine-tuned specifically for programming tasks.
+    model_info = info_models.get(model_name.lower())
+    if not model_info:
+        return "No information available for this model."
+
+    # Format the information
+    api_key_note = "⚠️ **Requires API Key**" if model_info.requires_api_key else "✅ **No API Key Required**"
+
+    return f"""
+### {model_info.name}
+
+**Provider:** {model_info.provider}
+
+**Description:** {model_info.description}
 
 **Strengths:**
-- Focused on code generation
-- More lightweight than larger models
-- Faster inference times
-- Can run locally
+{chr(10).join(f'- {strength}' for strength in model_info.strengths)}
 
 **Limitations:**
-- Smaller context window
-- Less general knowledge
-- May produce simpler code
-        """,
-        "t0_3b": """
-### T0_3B
+{chr(10).join(f'- {limitation}' for limitation in model_info.limitations)}
 
-**Provider:** BigScience
-
-**Description:** A 3 billion parameter language model trained on diverse datasets with zero-shot capabilities.
-
-**Strengths:**
-- General-purpose capabilities
-- Good instruction following
-- Diverse training data
-- Balance of size and performance
-
-**Limitations:**
-- Not specialized for code generation
-- May require adaptation of templates
-- Medium-sized model (3B parameters)
-        """
-    }
-
-    return info.get(model_name, "No information available for this model.")
+{api_key_note}
+    """
